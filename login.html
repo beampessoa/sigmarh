@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Acesso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Mesmo desenho do login do E-SIGMA. Logo vem do bucket, nunca base64. */
+  :root{--blue:#0F4CBA;--blue-700:#0B3A91;--graphite:#1F2937;--green:#22C55E;--green-600:#16A34A;
+    --ink:#1F2937;--ink-soft:#4B5563;--muted:#6B7280;--line:#E5E7EB;--field:#F4F6FA;--field-line:#D7DEEA;
+    --danger:#EF4444;--font-display:'Exo 2',system-ui,sans-serif;--font-ui:'Inter',system-ui,sans-serif;
+    --r-md:12px;--shadow-btn:0 10px 22px -8px rgba(15,76,186,.55);--ease:cubic-bezier(.22,.61,.36,1)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font-ui);color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
+  .shell{display:grid;grid-template-columns:1.05fr .95fr;min-height:100vh}
+
+  .brand-panel{position:relative;overflow:hidden;color:#fff;padding:46px 56px;display:flex;flex-direction:column;
+    background:radial-gradient(900px 600px at 12% -10%,rgba(91,138,230,.28),transparent 55%),
+      radial-gradient(700px 700px at 90% 110%,rgba(34,197,94,.16),transparent 55%),
+      linear-gradient(155deg,var(--blue) 0%,var(--blue-700) 42%,var(--graphite) 100%)}
+  .brand-panel::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:46px 46px;-webkit-mask-image:radial-gradient(120% 110% at 30% 20%,#000 55%,transparent 100%);
+    mask-image:radial-gradient(120% 110% at 30% 20%,#000 55%,transparent 100%)}
+  .brand-panel::after{content:"Σ";position:absolute;right:-60px;bottom:-120px;font-family:var(--font-display);
+    font-weight:800;font-size:520px;line-height:1;color:rgba(255,255,255,.04);pointer-events:none}
+  .brand-panel>*{position:relative;z-index:1}
+  .brand-logo{height:64px;width:auto;display:block;filter:brightness(0) invert(1)}
+  .brand-hero{margin-top:auto;max-width:460px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;color:#BFD3FF;margin-bottom:22px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(34,197,94,.22)}
+  .brand-hero h1{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.12}
+  .brand-hero h1 .accent{color:var(--green)}
+  .brand-hero p{margin-top:18px;color:#C5D3EC;font-size:15.5px;line-height:1.6;max-width:420px}
+  .flow{margin-top:42px;display:flex;flex-direction:column;position:relative}
+  .flow .step{display:flex;align-items:center;gap:16px;height:46px;position:relative}
+  .flow .node{width:18px;height:18px;border-radius:5px;flex:none;border:2px solid rgba(255,255,255,.55);
+    background:rgba(255,255,255,.06);position:relative;z-index:2}
+  .flow .step:last-child .node{background:var(--green);border-color:var(--green);box-shadow:0 0 0 5px rgba(34,197,94,.20)}
+  .flow .connector{position:absolute;left:8px;top:32px;width:2px;height:46px;background:rgba(255,255,255,.16)}
+  .flow .step:last-child .connector{display:none}
+  .flow .k{font-size:14px;font-weight:600;color:#EAF1FF}
+  .flow .v{font-size:12px;color:#90A8D0;display:block}
+  .brand-foot{margin-top:auto;padding-top:40px;color:#8FA6CC;font-size:12.5px}
+
+  .auth-panel{display:flex;align-items:center;justify-content:center;padding:48px 40px}
+  .auth-card{width:100%;max-width:412px}
+  .auth-head{margin-bottom:28px}
+  .auth-head h2{font-family:var(--font-display);font-size:27px;font-weight:700;color:var(--graphite)}
+  .auth-head p{margin-top:8px;color:var(--muted);font-size:14.5px;line-height:1.5}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px}
+  .input-wrap{position:relative;display:flex;align-items:center}
+  .input-wrap .lead{position:absolute;left:14px;width:18px;height:18px;color:var(--muted);pointer-events:none}
+  .input-wrap input{width:100%;height:52px;border:1.5px solid var(--field-line);background:var(--field);
+    border-radius:var(--r-md);padding:0 50px 0 44px;font-family:var(--font-ui);font-size:16px;color:var(--ink)}
+  .input-wrap input:focus{outline:none;background:#fff;border-color:var(--blue);box-shadow:0 0 0 4px rgba(15,76,186,.14)}
+  .input-wrap .toggle{position:absolute;right:6px;height:44px;width:44px;display:flex;align-items:center;justify-content:center;
+    border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:8px}
+  .input-wrap .toggle svg{width:20px;height:20px}
+  .field.invalid input{border-color:var(--danger);background:#FEF2F2}
+  .err{display:none;color:#B91C1C;font-size:13px;margin-top:7px;font-weight:500}
+  .field.invalid .err{display:block}
+  .row-end{display:flex;justify-content:flex-end;margin:2px 0 22px}
+  .link{color:var(--blue);font-size:14px;font-weight:600;background:none;border:0;cursor:pointer;
+    min-height:44px;padding:0 4px;font-family:inherit}
+  .link:hover{text-decoration:underline}
+  .btn{width:100%;height:54px;border:none;border-radius:var(--r-md);font-family:var(--font-ui);font-size:16px;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;
+    background:linear-gradient(135deg,var(--blue) 0%,var(--blue-700) 100%);box-shadow:var(--shadow-btn)}
+  .btn:disabled{cursor:wait;box-shadow:none;filter:grayscale(.3) brightness(1.1)}
+  .btn .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;display:none}
+  .btn.loading .spin{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .aviso{display:none;margin-bottom:18px;padding:12px 14px;border-radius:var(--r-md);font-size:14px;font-weight:500;
+    border:1px solid;line-height:1.5}
+  .aviso.show{display:block}
+  .aviso.ok{background:#F0FDF4;border-color:#BBF7D0;color:#166534}
+  .aviso.erro{background:#FEF2F2;border-color:#FECACA;color:#B91C1C}
+  .auth-foot{margin-top:36px;text-align:center;color:#9AA6B8;font-size:12px;line-height:1.7}
+  .auth-foot b{color:var(--ink-soft)}
+  @media (max-width:920px){
+    .shell{grid-template-columns:1fr}
+    .brand-panel{padding:28px 24px}
+    .brand-hero{margin-top:22px}.brand-hero h1{font-size:28px}
+    .flow,.brand-foot{display:none}
+    .auth-panel{padding:32px 20px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="brand-panel">
+    <img class="brand-logo" src="https://kiwiykgzogcxiseynzyy.supabase.co/storage/v1/object/public/LOGO-Empresas/sigmacode.png" alt="SIGMA CODE Engenharia">
+    <div class="brand-hero">
+      <span class="eyebrow"><span class="dot"></span>Sigma RH</span>
+      <h1>Quem está no contrato, <span class="accent">hoje e em qualquer data</span></h1>
+      <p>Entrada, saída e situação do efetivo do contrato, com histórico de cada passagem.</p>
+      <div class="flow" aria-hidden="true">
+        <div class="step"><span class="connector"></span><span class="node"></span><span><span class="k">Candidato</span><span class="v">Cadastrado, treinando</span></span></div>
+        <div class="step"><span class="connector"></span><span class="node"></span><span><span class="k">No contrato</span><span class="v">Mobilizado, com data de entrada</span></span></div>
+        <div class="step"><span class="connector"></span><span class="node"></span><span><span class="k">Pode ir a campo</span><span class="v">PIN e treinamentos em dia</span></span></div>
+        <div class="step"><span class="connector"></span><span class="node"></span><span><span class="k">Saída</span><span class="v">Com motivo e histórico guardado</span></span></div>
+      </div>
+    </div>
+    <div class="brand-foot">Acesso restrito ao RH e à administração do contrato.</div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="auth-head">
+        <h2>Entrar no Sigma RH</h2>
+        <p>Use o e-mail e a senha da sua conta.</p>
+      </div>
+
+      <div class="aviso" id="aviso" role="alert"></div>
+
+      <form id="form" novalidate>
+        <div class="field" id="f-user">
+          <label for="user">E-mail</label>
+          <div class="input-wrap">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input type="email" id="user" autocomplete="username" placeholder="nome@empresa.com.br" inputmode="email">
+          </div>
+          <span class="err" id="err-user">Informe um e-mail válido.</span>
+        </div>
+        <div class="field" id="f-pass">
+          <label for="pass">Senha</label>
+          <div class="input-wrap">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="pass" autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="toggle" id="toggle" aria-label="Mostrar senha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="err" id="err-pass">Informe sua senha.</span>
+        </div>
+        <div class="row-end"><button type="button" class="link" id="btnEsqueci">Esqueci minha senha</button></div>
+        <button type="submit" class="btn" id="submit"><span class="spin"></span><span class="label">Entrar</span></button>
+      </form>
+
+      <div class="auth-foot"><b>Sigma RH</b> · <span id="versao"></span><br>© 2026 SIGMA CODE</div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script>
+const VERSAO = '2026-10-05 · login';
+console.log('[Sigma RH] ' + VERSAO);
+document.getElementById('versao').textContent = VERSAO;
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const aviso = (txt, tom) => { const a = $('aviso'); a.textContent = txt; a.className = 'aviso show ' + tom; };
+  let db;
+  try { db = SigmaRH.conectar(); }
+  catch (e) { aviso('O sistema não carregou. Confira a internet e recarregue a página.', 'erro'); return; }
+
+  // Entra só quem tem papel rh ou admin. Os outros recebem a frase e saem.
+  async function seguir(session) {
+    const papel = SigmaRH.papelDaSessao(session);
+    if (SigmaRH.PAPEIS.includes(papel)) { window.location.replace('shell.html'); return; }
+    await db.auth.signOut();
+    aviso('Esta conta não tem acesso ao Sigma RH. Peça ao administrador para liberar.', 'erro');
+    reset();
+  }
+
+  db.auth.getSession().then(({ data: { session } }) => { if (session) seguir(session); });
+
+  const reset = () => { $('submit').classList.remove('loading'); $('submit').disabled = false;
+                        $('submit').querySelector('.label').textContent = 'Entrar'; };
+  const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+  $('toggle').addEventListener('click', e => {
+    const mostrando = $('pass').type === 'text';
+    $('pass').type = mostrando ? 'password' : 'text';
+    e.currentTarget.setAttribute('aria-label', mostrando ? 'Mostrar senha' : 'Esconder senha');
+  });
+  [['user','f-user'],['pass','f-pass']].forEach(([i, f]) =>
+    $(i).addEventListener('input', () => $(f).classList.remove('invalid')));
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    let ok = true;
+    if (!emailOk($('user').value)) { $('err-user').textContent = 'Informe um e-mail válido.'; $('f-user').classList.add('invalid'); ok = false; }
+    if (!$('pass').value) { $('err-pass').textContent = 'Informe sua senha.'; $('f-pass').classList.add('invalid'); ok = false; }
+    if (!ok) return;
+
+    $('submit').classList.add('loading'); $('submit').disabled = true;
+    $('submit').querySelector('.label').textContent = 'Entrando...';
+    $('aviso').className = 'aviso';
+
+    const { data, error } = await db.auth.signInWithPassword({ email: $('user').value.trim(), password: $('pass').value });
+    if (error) {
+      let msg = 'E-mail ou senha não conferem.';
+      if (/Email not confirmed/i.test(error.message)) msg = 'Confirme seu e-mail antes de entrar.';
+      if (/Too many|rate/i.test(error.message)) msg = 'Muitas tentativas. Espere alguns minutos.';
+      if (/fetch|network/i.test(error.message)) msg = 'Sem conexão. Confira a internet e tente de novo.';
+      $('err-pass').textContent = msg; $('f-pass').classList.add('invalid');
+      reset(); return;
+    }
+    seguir(data.session);
+  });
+
+  $('btnEsqueci').addEventListener('click', async () => {
+    const email = $('user').value.trim();
+    if (!emailOk(email)) {
+      $('err-user').textContent = 'Escreva seu e-mail acima e toque de novo em "Esqueci minha senha".';
+      $('f-user').classList.add('invalid'); $('user').focus(); return;
+    }
+    $('btnEsqueci').disabled = true;
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/reset-senha' });
+    $('btnEsqueci').disabled = false;
+    if (error) { aviso('Não foi possível enviar o e-mail agora. Tente de novo em alguns minutos.', 'erro'); return; }
+    // Mesma frase exista ou não a conta: não revela quem tem acesso.
+    aviso('Se este e-mail tiver conta, chega em instantes um link para criar senha nova.', 'ok');
+  });
+})();
+</script>
+</body>
+</html>

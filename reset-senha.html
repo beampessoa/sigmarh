@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Nova senha</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#0F4CBA;--blue-700:#0B3A91;--graphite:#1F2937;--muted:#6B7280;--field:#F4F6FA;--field-line:#D7DEEA}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:#F1F4F9;color:var(--graphite);min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:28px;width:100%;max-width:420px;
+    box-shadow:0 1px 3px rgba(16,24,40,.1)}
+  h1{font-family:'Exo 2',sans-serif;font-size:24px;margin-bottom:8px}
+  p{color:var(--muted);font-size:14.5px;line-height:1.55;margin-bottom:20px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:8px}
+  input{width:100%;height:52px;border:1.5px solid var(--field-line);background:var(--field);border-radius:12px;
+    padding:0 14px;font-size:16px;margin-bottom:16px}
+  input:focus{outline:none;background:#fff;border-color:var(--blue);box-shadow:0 0 0 4px rgba(15,76,186,.14)}
+  button{width:100%;height:54px;border:0;border-radius:12px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;
+    background:linear-gradient(135deg,var(--blue),var(--blue-700))}
+  button:disabled{opacity:.6;cursor:wait}
+  .aviso{display:none;margin-bottom:16px;padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.5;border:1px solid}
+  .aviso.show{display:block}
+  .aviso.ok{background:#F0FDF4;border-color:#BBF7D0;color:#166534}
+  .aviso.erro{background:#FEF2F2;border-color:#FECACA;color:#B91C1C}
+  a{color:var(--blue);font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Criar senha nova</h1>
+  <p>Mínimo de 8 caracteres. Use uma senha que você não usa em outro lugar.</p>
+  <div class="aviso" id="aviso" role="alert"></div>
+  <form id="form" novalidate>
+    <label for="s1">Senha nova</label>
+    <input type="password" id="s1" autocomplete="new-password">
+    <label for="s2">Repita a senha nova</label>
+    <input type="password" id="s2" autocomplete="new-password">
+    <button type="submit" id="btn" disabled>Aguardando o link...</button>
+  </form>
+  <p style="margin:18px 0 0"><a href="login.html">Voltar para o login</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script>
+console.log('[Sigma RH] 2026-10-05 · reset-senha');
+(() => {
+  const $ = id => document.getElementById(id);
+  const aviso = (t, tom) => { $('aviso').textContent = t; $('aviso').className = 'aviso show ' + tom; };
+  const db = SigmaRH.conectar();
+  let pronto = false;
+
+  // O link do e-mail abre esta página com a sessão de recuperação. Sem ela, não há o que fazer.
+  db.auth.onAuthStateChange((ev, s) => {
+    if ((ev === 'PASSWORD_RECOVERY' || ev === 'SIGNED_IN') && s) {
+      pronto = true; $('btn').disabled = false; $('btn').textContent = 'Gravar senha nova';
+    }
+  });
+  setTimeout(() => {
+    if (!pronto) aviso('Este link não vale mais. Volte ao login e peça outro em "Esqueci minha senha".', 'erro');
+  }, 4000);
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const s1 = $('s1').value, s2 = $('s2').value;
+    if (s1.length < 8) { aviso('A senha precisa ter pelo menos 8 caracteres.', 'erro'); return; }
+    if (s1 !== s2)     { aviso('As duas senhas não são iguais.', 'erro'); return; }
+    $('btn').disabled = true;
+    const { error } = await db.auth.updateUser({ password: s1 });
+    if (error) { $('btn').disabled = false; aviso('Não foi possível gravar. Peça um link novo e tente de novo.', 'erro'); return; }
+    aviso('Senha nova gravada. Entrando...', 'ok');
+    setTimeout(() => location.replace('shell.html'), 1200);
+  });
+})();
+</script>
+</body>
+</html>

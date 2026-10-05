@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Efetivo no contrato</title>
+<style>
+  /* Tokens desta tela. A casca (sigmatr-ui.js) usa as mesmas cores em literal. */
+  :root{--white:#fff;--line:#E5E7EB;--canvas:#F4F6FA;--ink-soft:#4B5563;--muted:#6B7280;
+    --blue:#0F4CBA;--green:#22C55E;--green-600:#16A34A;--graphite:#1F2937;--graphite-900:#141B26;
+    --r:10px;--sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
+    --font-d:'Exo 2',system-ui,sans-serif}
+
+  /* ── Tela em passos (padrão E-SIGMA, 19/09/2026) ── */
+  .passo{background:var(--white);border:1px solid var(--line);border-radius:var(--r);
+    box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+  .passo-cab{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;
+    padding:15px 16px;min-height:56px;text-align:left;cursor:pointer;font-family:inherit}
+  .passo-cab:hover{background:#F7F9FD}
+  .passo .num{width:28px;height:28px;border-radius:50%;background:var(--canvas);
+    color:var(--ink-soft);display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;border:1px solid var(--line);flex:none}
+  .passo.feito .num{background:var(--green);color:#fff;border-color:var(--green)}
+  .passo.aberto .num{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .passo .tit{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--graphite-900)}
+  .passo .resumo{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right;max-width:52%}
+  .passo .resumo.ok{color:var(--green-600);font-weight:600}
+  .passo .resumo.warn{color:#B45309;font-weight:600}
+  .passo .seta{font-size:12px;color:var(--muted);flex:none;transition:.15s}
+  .passo.aberto .seta{transform:rotate(180deg)}
+  .passo-bd{display:none;padding:14px 16px 18px;border-top:1px solid var(--line)}
+  .passo.aberto .passo-bd{display:block}
+  .passo-bd h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin:16px 0 6px;font-weight:700}
+  .passo-ajuda{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:14px;
+    background:#F7F9FD;border-left:3px solid var(--blue);
+    border-radius:0 var(--r) var(--r) 0;padding:10px 12px}
+  .passo.avancado{background:#FBFCFE}
+  .passo.avancado .num{background:var(--graphite);color:#fff;border-color:var(--graphite)}
+
+  /* ── Campos e tabela ── */
+  .linha-campos{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+  .linha-campos .st-field{flex:1 1 200px;margin-bottom:0}
+  .st-field input,.st-field select,.st-field textarea{min-height:44px;font-size:15px}
+  .acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .acoes .st-btn{min-height:48px;padding:0 20px;font-size:15px}
+
+  .tab-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:560px;overflow-y:auto;
+    border:1px solid var(--line);border-radius:var(--r)}
+  table.tab{width:100%;border-collapse:collapse;font-size:13px}
+  table.tab th{position:sticky;top:0;background:#fff;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:10px 12px;
+    border-bottom:1px solid var(--line);white-space:nowrap;z-index:1}
+  table.tab td{padding:10px 12px;border-bottom:1px solid #F1F3F7;vertical-align:middle}
+  table.tab tr:last-child td{border-bottom:0}
+  .nome{font-weight:600;color:var(--graphite)}
+  .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .vazio{padding:24px;text-align:center;color:var(--muted)}
+
+  /* Escolha por pessoa na revisão: três botões grandes, um marcado */
+  .escolha{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .escolha button{min-height:40px;min-width:84px;padding:0 10px;border:0;background:#fff;
+    font:600 13px/1 inherit;color:var(--ink-soft);cursor:pointer;border-right:1px solid var(--line)}
+  .escolha button:last-child{border-right:0}
+  .escolha button[aria-pressed="true"][data-v="continua"]{background:#15803D;color:#fff}
+  .escolha button[aria-pressed="true"][data-v="sai"]{background:#B91C1C;color:#fff}
+  .escolha button[aria-pressed="true"][data-v="nao_sei"]{background:#475569;color:#fff}
+  .mini{min-height:40px;font-size:14px;width:130px}
+
+  .contas{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+  .conta{background:var(--canvas);border:1px solid var(--line);border-radius:10px;padding:8px 12px;
+    font-size:12.5px;color:var(--ink-soft)}
+  .conta b{font-size:18px;color:var(--graphite);margin-right:4px}
+
+  .console{margin-top:12px;background:#0F172A;color:#E2E8F0;border-radius:var(--r);padding:10px 12px;
+    font:12.5px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;max-height:260px;overflow:auto;
+    white-space:pre-wrap}
+  .console:empty{display:none}
+  .console .ok{color:#86EFAC}.console .erro{color:#FCA5A5}.console .aviso{color:#FCD34D}
+
+  .rodape-versao{margin:18px 0 0;font-size:11.5px;color:var(--muted);text-align:right}
+  @media(max-width:640px){ .col-opt{display:none} .passo .resumo{max-width:45%} }
+</style>
+</head>
+<body data-pagina="efetivo">
+
+<div id="app">
+  <div class="content">
+    <div class="st-page-head">
+      <h1>Efetivo no contrato</h1>
+      <p>Quem está no contrato, quem entra e quem sai. <b>Cinco passos, de cima para baixo.</b>
+         Abra um por vez: cada um mostra à direita o que já foi feito. O que está em
+         Ferramentas avançadas não é preciso no uso normal.</p>
+    </div>
+
+    <!-- 1 -->
+    <section class="passo aberto" id="passo1">
+      <button class="passo-cab" type="button" data-passo="1">
+        <span class="num">1</span><span class="tit">Quem está no contrato hoje</span>
+        <span class="resumo" id="res1">carregando...</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          Esta é a lista que o campo, o RDC e as pendências vão usar para saber quem está ativo.
+          <b>Onde mora a armadilha:</b> quem ainda está como <b>candidato</b> não aparece aqui,
+          mesmo que esteja trabalhando. Até a revisão do passo 2 terminar, a lista fica
+          incompleta. O sistema decide sozinho a coluna "Pode ir a campo": precisa estar no
+          contrato, ter PIN e estar apto pela matriz da função.
+        </div>
+        <div class="contas" id="contas1"></div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="q1">Buscar</label>
+            <input id="q1" type="search" autocomplete="off" placeholder="Nome ou código"></div>
+          <div class="st-field" style="flex:0 0 180px"><label for="data1">Na data</label>
+            <input id="data1" type="date"></div>
+        </div>
+        <div class="tab-wrap">
+          <table class="tab">
+            <thead><tr><th>Pessoa</th><th class="col-opt">Código</th><th class="col-opt">Empresa</th>
+              <th>Entrou em</th><th>Pode ir a campo</th></tr></thead>
+            <tbody id="linhas1"><tr><td colspan="5" class="vazio">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="passo" id="passo2">
+      <button class="passo-cab" type="button" data-passo="2">
+        <span class="num">2</span><span class="tit">Revisar os candidatos de uma vez</span>
+        <span class="resumo" id="res2">carregando...</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          Para cada candidato, marque <b>Continua</b> (entra no contrato), <b>Sai</b> (passagem
+          encerrada) ou deixe em <b>Ainda não sei</b> (nada muda). Só as linhas marcadas são gravadas.
+          <b>Onde mora a armadilha:</b> quem <b>continua</b> precisa de matrícula Petrobras. Sem ela,
+          a linha é recusada e aparece no relatório abaixo. Quem <b>sai</b> precisa de três datas
+          e motivo: as datas e o motivo de cima valem para todas as linhas marcadas como Sai.
+          Cada linha é gravada ou recusada sozinha: uma recusa não desfaz as outras.
+        </div>
+        <h2>Valores para todas as linhas marcadas</h2>
+        <div class="linha-campos">
+          <div class="st-field"><label for="lt-entrada">Continua: entrou no contrato em</label>
+            <input id="lt-entrada" type="date"></div>
+          <div class="st-field"><label for="lt-desde">Sai: trabalhava desde</label>
+            <input id="lt-desde" type="date"></div>
+          <div class="st-field"><label for="lt-fim">Sai: não trabalha mais a partir de</label>
+            <input id="lt-fim" type="date"></div>
+        </div>
+        <div class="linha-campos">
+          <div class="st-field" style="flex:1 1 100%"><label for="lt-motivo">Sai: motivo da saída</label>
+            <input id="lt-motivo" type="text" maxlength="200" placeholder="Ex.: fim da parada de manutenção"></div>
+        </div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="q2">Buscar candidato</label>
+            <input id="q2" type="search" autocomplete="off" placeholder="Nome ou código"></div>
+        </div>
+        <div class="tab-wrap">
+          <table class="tab">
+            <thead><tr><th>Candidato</th><th class="col-opt">Código</th><th>Matrícula Petrobras</th>
+              <th>Decisão</th></tr></thead>
+            <tbody id="linhas2"><tr><td colspan="4" class="vazio">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="acoes">
+          <button class="st-btn" type="button" id="btn-lote">Gravar as decisões marcadas</button>
+        </div>
+        <div class="console" id="console2"></div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="passo" id="passo3">
+      <button class="passo-cab" type="button" data-passo="3">
+        <span class="num">3</span><span class="tit">Colocar uma pessoa no contrato</span>
+        <span class="resumo" id="res3">nenhuma nesta sessão</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          Para quem chega agora ou volta para uma nova parada. A pessoa precisa já estar
+          cadastrada (importada do RH). O sistema decide sozinho se é a primeira entrada ou uma
+          volta, pelo que está gravado.
+          <b>Onde mora a armadilha:</b> a data de entrada não pode ser depois de hoje, e numa
+          volta não pode ser antes da última saída. Sem matrícula Petrobras ninguém entra.
+        </div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="m-busca">Pessoa (nome ou código)</label>
+            <input id="m-busca" type="search" autocomplete="off" list="m-lista" placeholder="Comece a digitar"></div>
+          <datalist id="m-lista"></datalist>
+        </div>
+        <p class="sub" id="m-quem"></p>
+        <div class="linha-campos">
+          <div class="st-field"><label for="m-entrada">Entrou no contrato em</label>
+            <input id="m-entrada" type="date"></div>
+          <div class="st-field"><label for="m-matricula">Matrícula Petrobras (se faltar)</label>
+            <input id="m-matricula" type="text" inputmode="numeric" maxlength="20"></div>
+          <div class="st-field"><label for="m-empresa">Empresa (se não for GCB)</label>
+            <input id="m-empresa" type="text" maxlength="60" placeholder="Ex.: SEEPIL"></div>
+        </div>
+        <div class="acoes"><button class="st-btn" type="button" id="btn-mob">Colocar no contrato</button></div>
+        <div class="console" id="console3"></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="passo" id="passo4">
+      <button class="passo-cab" type="button" data-passo="4">
+        <span class="num">4</span><span class="tit">Tirar uma pessoa do contrato</span>
+        <span class="resumo" id="res4">nenhuma nesta sessão</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          A partir da data informada a pessoa <b>não assina mais em campo</b>, não faz prova e não
+          recebe link novo. O histórico assinado fica guardado e o PIN é mantido: se ela voltar,
+          o PIN volta a valer.
+          <b>Onde mora a armadilha:</b> a data é o <b>primeiro dia fora</b>, não o último dia
+          trabalhado. Quem trabalhou até sexta e não volta: informe o sábado. O motivo é obrigatório.
+        </div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="d-busca">Pessoa no contrato (nome ou código)</label>
+            <input id="d-busca" type="search" autocomplete="off" list="d-lista" placeholder="Comece a digitar"></div>
+          <datalist id="d-lista"></datalist>
+        </div>
+        <p class="sub" id="d-quem"></p>
+        <div class="linha-campos">
+          <div class="st-field" style="flex:0 0 220px"><label for="d-fim">Não trabalha mais a partir de</label>
+            <input id="d-fim" type="date"></div>
+          <div class="st-field"><label for="d-motivo">Motivo da saída</label>
+            <input id="d-motivo" type="text" maxlength="200" placeholder="Ex.: pedido de demissão"></div>
+        </div>
+        <div class="acoes"><button class="st-btn" data-tom="perigo" type="button" id="btn-desm">Tirar do contrato</button></div>
+        <div class="console" id="console4"></div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="passo" id="passo5">
+      <button class="passo-cab" type="button" data-passo="5">
+        <span class="num">5</span><span class="tit">Corrigir um registro feito errado</span>
+        <span class="resumo" id="res5">nenhuma nesta sessão</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          Corrige a última passagem da pessoa: a data de entrada, a data de saída, ou desfaz uma
+          saída registrada por engano. Toda correção fica no histórico com o valor antigo e o novo.
+          <b>Onde mora a armadilha:</b> o RH corrige até <b>7 dias</b> depois do registro. Depois
+          disso, só o administrador. Anular uma passagem inteira também é só do administrador.
+        </div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="c-busca">Pessoa (nome ou código)</label>
+            <input id="c-busca" type="search" autocomplete="off" list="c-lista" placeholder="Comece a digitar"></div>
+          <datalist id="c-lista"></datalist>
+        </div>
+        <p class="sub" id="c-quem"></p>
+        <div class="linha-campos">
+          <div class="st-field"><label for="c-acao">O que corrigir</label>
+            <select id="c-acao">
+              <option value="entrada">A data de entrada</option>
+              <option value="fim">A data de saída</option>
+              <option value="reabrir">Desfazer a saída (a pessoa continua)</option>
+              <option value="anular">Anular a passagem inteira (só administrador)</option>
+            </select></div>
+          <div class="st-field" style="flex:0 0 200px"><label for="c-data">Data certa</label>
+            <input id="c-data" type="date"></div>
+        </div>
+        <div class="linha-campos">
+          <div class="st-field" style="flex:1 1 100%"><label for="c-motivo">Por que corrigir</label>
+            <input id="c-motivo" type="text" maxlength="200" placeholder="Ex.: data digitada errada"></div>
+        </div>
+        <div class="acoes"><button class="st-btn" type="button" id="btn-corr">Gravar correção</button></div>
+        <div class="console" id="console5"></div>
+      </div>
+    </section>
+
+    <!-- Avançado -->
+    <section class="passo avancado" id="passo6">
+      <button class="passo-cab" type="button" data-passo="6">
+        <span class="num">&#9881;</span><span class="tit">Ferramentas avançadas</span>
+        <span class="resumo" id="res6">conferência</span><span class="seta">&#9662;</span>
+      </button>
+      <div class="passo-bd">
+        <div class="passo-ajuda">
+          Nada aqui é preciso no uso normal. Serve para conferir: o histórico completo de uma pessoa
+          e a lista inteira em planilha (sem CPF).
+        </div>
+        <div class="linha-campos">
+          <div class="st-field"><label for="h-busca">Histórico de (nome ou código)</label>
+            <input id="h-busca" type="search" autocomplete="off" list="c-lista"></div>
+        </div>
+        <div class="acoes">
+          <button class="st-btn" data-tom="quieto" type="button" id="btn-hist">Ver histórico</button>
+          <button class="st-btn" data-tom="quieto" type="button" id="btn-csv">Baixar lista em CSV</button>
+        </div>
+        <div class="console" id="console6"></div>
+      </div>
+    </section>
+
+    <p class="rodape-versao" id="versao"></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script>
+const VERSAO = '2026-10-05 · efetivo, fase 1';
+
+(async () => {
+  const quem = await SigmaRH.init();
+  if (!quem) return;
+  SigmaRH.versaoPagina(VERSAO);
+  document.getElementById('versao').textContent = 'efetivo ' + VERSAO;
+
+  const db  = SigmaRH.db;
+  const esc = SigmaRH.esc;
+  const $   = id => document.getElementById(id);
+  const cod = c => SigmaRH.fmt.codigo(c);
+
+  // ── data de hoje em Brasília, no formato do <input type=date> ──
+  const hojeBR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const dataBR = d => d ? d.split('-').reverse().join('/') : '';
+  ['data1','lt-fim','m-entrada','d-fim'].forEach(id => { $(id).value = hojeBR(); });
+  ['data1','lt-entrada','lt-desde','lt-fim','m-entrada','d-fim','c-data'].forEach(id => { $(id).max = hojeBR(); });
+
+  // ── passos ──
+  function togglePasso(n){
+    const el = $('passo'+n); if (!el) return;
+    const abrindo = !el.classList.contains('aberto');
+    document.querySelectorAll('.passo').forEach(x => x.classList.remove('aberto'));
+    if (abrindo) el.classList.add('aberto');
+  }
+  function abrirPasso(n){
+    const el = $('passo'+n); if (!el) return;
+    document.querySelectorAll('.passo').forEach(x => x.classList.remove('aberto'));
+    el.classList.add('aberto');
+    if (el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function resumoPasso(n, txt, estado){
+    const el = $('res'+n);
+    if (el){ el.textContent = txt || ''; el.className = 'resumo' + (estado ? (' ' + estado) : ''); }
+    const p = $('passo'+n); if (p) p.classList.toggle('feito', estado === 'ok');
+  }
+  document.querySelectorAll('[data-passo]').forEach(b =>
+    b.addEventListener('click', () => togglePasso(b.dataset.passo)));
+
+  // ── console no passo da ação ──
+  function log(n, texto, tom){
+    const c = $('console'+n); if (!c) return;
+    const linha = document.createElement('div');
+    if (tom) linha.className = tom;
+    linha.textContent = new Date().toLocaleTimeString('pt-BR', { timeZone:'America/Sao_Paulo' }) + '  ' + texto;
+    c.appendChild(linha); c.scrollTop = c.scrollHeight;
+  }
+
+  // ── erro em português, nunca código ──
+  const frase = SigmaRH.frase;
+
+  // ── dados ──
+  let todos = [];        // rh_efetivo(hoje, todos): todo mundo, sem id e sem CPF
+  let doDia = [];        // rh_efetivo(data escolhida)
+  const decisao = {};    // codigo -> { v:'continua'|'sai'|'nao_sei', matricula }
+  const estadoTxt = { mobilizado:'no contrato', desmobilizado:'saiu', candidato:'candidato' };
+
+  const motivoTxt = {
+    sem_pin: 'sem PIN', pin_bloqueado: 'PIN bloqueado agora', inapto_matriz: 'falta treinamento',
+    sem_vinculo: 'fora do contrato', desligado: 'saiu do contrato'
+  };
+  const tarjaCampo = p => p.pode_campo
+    ? '<span class="st-tarja" data-s="ok">Pode</span>'
+    : `<span class="st-tarja" data-s="nao">Não: ${esc((p.motivos || []).map(m => motivoTxt[m] || m).join(', '))}</span>`;
+
+  async function carregarTodos(){
+    const { data, error } = await db.rpc('rh_efetivo', { p_data: hojeBR(), p_todos: true });
+    if (error) { throw error; }
+    todos = data || [];
+    montarListas();
+    pintar2();
+  }
+
+  async function carregarDia(){
+    const { data, error } = await db.rpc('rh_efetivo', { p_data: $('data1').value || hojeBR(), p_todos: false });
+    if (error) {
+      $('linhas1').innerHTML = `<tr><td colspan="5" class="vazio">${esc(frase(error))}</td></tr>`;
+      resumoPasso(1, 'não carregou', 'warn');
+      return;
+    }
+    doDia = data || [];
+    pintar1();
+  }
+
+  function pintar1(){
+    const q = ($('q1').value || '').trim().toLowerCase();
+    const lista = doDia.filter(p => !q || (p.nome || '').toLowerCase().includes(q)
+                                     || (p.codigo_publico || '').toLowerCase().includes(q));
+    const nCampo = doDia.filter(p => p.pode_campo).length;
+    const nCand  = todos.filter(p => p.estado === 'candidato').length;
+    const nSai   = todos.filter(p => p.estado === 'desmobilizado').length;
+    $('contas1').innerHTML =
+      `<span class="conta"><b>${doDia.length}</b>no contrato</span>` +
+      `<span class="conta"><b>${nCampo}</b>podem ir a campo</span>` +
+      `<span class="conta"><b>${nCand}</b>candidatos</span>` +
+      `<span class="conta"><b>${nSai}</b>saíram</span>`;
+    resumoPasso(1, `${doDia.length} no contrato · ${nCampo} podem ir a campo`, doDia.length ? 'ok' : 'warn');
+
+    $('linhas1').innerHTML = lista.length ? lista.map(p => `
+      <tr>
+        <td><div class="nome">${esc(p.nome)}</div><div class="sub">${esc(p.funcao || 'Sem função')}</div></td>
+        <td class="st-mono col-opt">${esc(cod(p.codigo_publico))}</td>
+        <td class="col-opt">${esc(p.empresa || 'GCB')}</td>
+        <td class="st-mono">${esc(dataBR(p.entrada))}</td>
+        <td>${tarjaCampo(p)}</td>
+      </tr>`).join('')
+      : `<tr><td colspan="5" class="vazio">${doDia.length ? 'Ninguém com essa busca.' : 'Ninguém no contrato nesta data. Comece pelo passo 2.'}</td></tr>`;
+  }
+
+  function pintar2(){
+    const cand = todos.filter(p => p.estado === 'candidato');
+    const q = ($('q2').value || '').trim().toLowerCase();
+    const lista = cand.filter(p => !q || (p.nome || '').toLowerCase().includes(q)
+                                    || (p.codigo_publico || '').toLowerCase().includes(q));
+    const marcados = Object.values(decisao).filter(d => d.v === 'continua' || d.v === 'sai');
+    const nCont = marcados.filter(d => d.v === 'continua').length;
+    const nSai  = marcados.filter(d => d.v === 'sai').length;
+    resumoPasso(2, cand.length
+      ? `${cand.length} candidatos · ${nCont} continua · ${nSai} sai`
+      : 'nenhum candidato', cand.length ? 'warn' : 'ok');
+    $('btn-lote').textContent = marcados.length
+      ? `Gravar ${marcados.length} decisão(ões) marcada(s)` : 'Gravar as decisões marcadas';
+
+    $('linhas2').innerHTML = lista.length ? lista.map(p => {
+      const d = decisao[p.codigo_publico] || { v:'nao_sei' };
+      const precisaMat = !p.tem_matricula_petrobras;
+      return `<tr>
+        <td><div class="nome">${esc(p.nome)}</div><div class="sub">${esc(p.funcao || 'Sem função')}${p.empresa ? ' · ' + esc(p.empresa) : ''}</div></td>
+        <td class="st-mono col-opt">${esc(cod(p.codigo_publico))}</td>
+        <td>${precisaMat
+          ? `<input class="mini" data-mat="${esc(p.codigo_publico)}" inputmode="numeric" maxlength="20" placeholder="falta" value="${esc(d.matricula || '')}">`
+          : '<span class="sub">cadastrada</span>'}</td>
+        <td><div class="escolha" data-cod="${esc(p.codigo_publico)}">
+          <button type="button" data-v="continua" aria-pressed="${d.v === 'continua'}">Continua</button>
+          <button type="button" data-v="sai" aria-pressed="${d.v === 'sai'}">Sai</button>
+          <button type="button" data-v="nao_sei" aria-pressed="${d.v === 'nao_sei'}">Ainda não sei</button>
+        </div></td></tr>`;
+    }).join('') : `<tr><td colspan="4" class="vazio">${cand.length ? 'Ninguém com essa busca.' : 'Todos os candidatos já foram revisados.'}</td></tr>`;
+  }
+
+  // listas de busca dos passos 3, 4 e 5 (por estado)
+  function montarListas(){
+    const opt = p => `<option value="${esc(p.nome)} · ${esc(cod(p.codigo_publico))}"></option>`;
+    $('m-lista').innerHTML = todos.filter(p => p.estado !== 'mobilizado').map(opt).join('');
+    $('d-lista').innerHTML = todos.filter(p => p.estado === 'mobilizado').map(opt).join('');
+    $('c-lista').innerHTML = todos.filter(p => p.estado !== 'candidato').map(opt).join('');
+  }
+  // acha a pessoa pelo texto digitado (código no fim, ou nome exato, ou código puro)
+  function acharPessoa(txt){
+    const t = (txt || '').trim().toUpperCase(); if (!t) return null;
+    const limpo = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const fim = limpo(t.split('·').pop());
+    return todos.find(p => limpo(p.codigo_publico) === fim)
+        || todos.find(p => (p.nome || '').toUpperCase() === t)
+        || null;
+  }
+  function mostrarQuem(campo, alvo){
+    const p = acharPessoa($(campo).value);
+    $(alvo).textContent = p
+      ? `${p.nome} · ${p.funcao || 'sem função'} · situação: ${estadoTxt[p.estado] || p.estado}`
+        + (p.entrada ? ` · entrada ${dataBR(p.entrada)}` : '') + (p.fim ? ` · saída ${dataBR(p.fim)}` : '')
+        + (p.estado !== 'mobilizado' && !p.tem_matricula_petrobras ? ' · SEM matrícula Petrobras' : '')
+      : ($(campo).value ? 'Ninguém encontrado com esse nome ou código.' : '');
+    return p;
+  }
+
+  // ── eventos ──
+  $('q1').addEventListener('input', pintar1);
+  $('data1').addEventListener('change', carregarDia);
+  $('q2').addEventListener('input', pintar2);
+  $('m-busca').addEventListener('input', () => mostrarQuem('m-busca', 'm-quem'));
+  $('d-busca').addEventListener('input', () => mostrarQuem('d-busca', 'd-quem'));
+  $('c-busca').addEventListener('input', () => mostrarQuem('c-busca', 'c-quem'));
+
+  $('linhas2').addEventListener('click', ev => {
+    const b = ev.target.closest('.escolha button'); if (!b) return;
+    const c = b.closest('.escolha').dataset.cod;
+    decisao[c] = Object.assign(decisao[c] || {}, { v: b.dataset.v });
+    pintar2();
+  });
+  $('linhas2').addEventListener('input', ev => {
+    const i = ev.target.closest('[data-mat]'); if (!i) return;
+    const c = i.dataset.mat;
+    decisao[c] = Object.assign(decisao[c] || { v:'nao_sei' }, { matricula: i.value.trim() });
+  });
+
+  // ── passo 2: lote ──
+  $('btn-lote').addEventListener('click', async () => {
+    const itens = [];
+    for (const [c, d] of Object.entries(decisao)) {
+      if (d.v === 'continua') {
+        itens.push({ codigo: c, acao: 'mobilizar', data: $('lt-entrada').value, matricula: d.matricula || null });
+      } else if (d.v === 'sai') {
+        itens.push({ codigo: c, acao: 'desmobilizar', data: $('lt-fim').value,
+                     entrada: $('lt-desde').value, motivo: $('lt-motivo').value });
+      }
+    }
+    if (!itens.length) { log(2, 'Nenhuma linha marcada como Continua ou Sai.', 'aviso'); return; }
+    if (itens.some(i => i.acao === 'mobilizar') && !$('lt-entrada').value) {
+      log(2, 'Informe a data de entrada de quem continua.', 'erro'); $('lt-entrada').focus(); return; }
+    if (itens.some(i => i.acao === 'desmobilizar') && (!$('lt-desde').value || !$('lt-fim').value || !$('lt-motivo').value.trim())) {
+      log(2, 'Para quem sai, informe desde quando trabalhava, a partir de quando não trabalha e o motivo.', 'erro'); return; }
+
+    const nC = itens.filter(i => i.acao === 'mobilizar').length;
+    const nS = itens.length - nC;
+    const ok = await SigmaRH.confirmar({
+      titulo: `Gravar ${itens.length} decisão(ões)?`,
+      texto: `${nC} entra(m) no contrato a partir de ${dataBR($('lt-entrada').value) || 'sem data'}. `
+           + `${nS} sai(em) a partir de ${dataBR($('lt-fim').value) || 'sem data'}.`,
+      impacto: nS ? `Quem sai deixa de assinar em campo a partir da data de saída.` : '',
+      acao: 'Gravar', tom: nS ? 'perigo' : 'normal'
+    });
+    if (!ok) return;
+
+    $('btn-lote').disabled = true;
+    log(2, `Gravando ${itens.length} linha(s)...`);
+    let feitas = 0, recusadas = 0;
+    for (let i = 0; i < itens.length; i += 300) {           // a RPC aceita até 300 por vez
+      const parte = itens.slice(i, i + 300);
+      const { data, error } = await db.rpc('rh_lote', { p_itens: parte });
+      if (error) { log(2, frase(error), 'erro'); recusadas += parte.length; continue; }
+      feitas += data.feitas; recusadas += data.recusadas;
+      (data.erros || []).forEach(e => {
+        const p = todos.find(x => x.codigo_publico === e.codigo);
+        log(2, `Recusada: ${p ? p.nome : e.codigo} (${e.acao === 'mobilizar' ? 'continua' : 'sai'}). ${e.motivo}`, 'erro');
+      });
+    }
+    log(2, `Pronto: ${feitas} gravada(s), ${recusadas} recusada(s).`, recusadas ? 'aviso' : 'ok');
+    for (const it of itens) delete decisao[it.codigo];
+    $('btn-lote').disabled = false;
+    await recarregar();
+    if (!recusadas) abrirPasso(1);
+    else log(2, 'Corrija as linhas recusadas acima e grave de novo. As outras já estão gravadas.', 'aviso');
+  });
+
+  // ── passo 3: mobilizar ou remobilizar ──
+  let nMob = 0, nDesm = 0, nCorr = 0;
+  $('btn-mob').addEventListener('click', async () => {
+    const p = acharPessoa($('m-busca').value);
+    if (!p) { log(3, 'Escolha a pessoa na lista.', 'erro'); $('m-busca').focus(); return; }
+    if (p.estado === 'mobilizado') { log(3, `${p.nome} já está no contrato.`, 'aviso'); return; }
+    const rpc = p.estado === 'desmobilizado' ? 'rh_remobilizar' : 'rh_mobilizar';
+    $('btn-mob').disabled = true;
+    const { error } = await db.rpc(rpc, {
+      p_codigo: p.codigo_publico, p_entrada: $('m-entrada').value || null,
+      p_empresa: $('m-empresa').value.trim() || null, p_matricula: $('m-matricula').value.trim() || null });
+    $('btn-mob').disabled = false;
+    if (error) { log(3, frase(error), 'erro'); return; }
+    nMob++;
+    log(3, `${p.nome} está no contrato desde ${dataBR($('m-entrada').value)}.`, 'ok');
+    resumoPasso(3, `${nMob} colocada(s) nesta sessão`, 'ok');
+    $('m-busca').value = ''; $('m-matricula').value = ''; $('m-empresa').value = ''; $('m-quem').textContent = '';
+    await recarregar();
+  });
+
+  // ── passo 4: desmobilizar ──
+  $('btn-desm').addEventListener('click', async () => {
+    const p = acharPessoa($('d-busca').value);
+    if (!p || p.estado !== 'mobilizado') { log(4, 'Escolha na lista uma pessoa que está no contrato.', 'erro'); return; }
+    const motivo = $('d-motivo').value.trim();
+    if (!$('d-fim').value || !motivo) { log(4, 'Informe a data e o motivo.', 'erro'); return; }
+    const ok = await SigmaRH.confirmar({
+      titulo: `Tirar ${p.nome} do contrato?`,
+      texto: `A partir de ${dataBR($('d-fim').value)}. Motivo: ${motivo}.`,
+      impacto: `${p.nome} deixa de assinar em campo, de fazer prova e de receber link. O histórico fica guardado.`,
+      acao: 'Tirar do contrato', tom: 'perigo'
+    });
+    if (!ok) return;
+    $('btn-desm').disabled = true;
+    const { error } = await db.rpc('rh_desmobilizar', {
+      p_codigo: p.codigo_publico, p_fim: $('d-fim').value, p_motivo: motivo, p_entrada: null });
+    $('btn-desm').disabled = false;
+    if (error) { log(4, frase(error), 'erro'); return; }
+    nDesm++;
+    log(4, `${p.nome} saiu do contrato a partir de ${dataBR($('d-fim').value)}.`, 'ok');
+    resumoPasso(4, `${nDesm} retirada(s) nesta sessão`, 'ok');
+    $('d-busca').value = ''; $('d-motivo').value = ''; $('d-quem').textContent = '';
+    await recarregar();
+  });
+
+  // ── passo 5: corrigir ──
+  $('c-acao').addEventListener('change', () => {
+    $('c-data').disabled = ['reabrir','anular'].includes($('c-acao').value);
+  });
+  $('btn-corr').addEventListener('click', async () => {
+    const p = acharPessoa($('c-busca').value);
+    if (!p || p.estado === 'candidato') { log(5, 'Escolha na lista uma pessoa que já tem passagem registrada.', 'erro'); return; }
+    const acao = $('c-acao').value;
+    const motivo = $('c-motivo').value.trim();
+    if (!motivo) { log(5, 'Escreva por que está corrigindo.', 'erro'); return; }
+    if (['entrada','fim'].includes(acao) && !$('c-data').value) { log(5, 'Informe a data certa.', 'erro'); return; }
+    if (acao === 'anular' || acao === 'reabrir') {
+      const ok = await SigmaRH.confirmar({
+        titulo: acao === 'anular' ? `Anular a última passagem de ${p.nome}?` : `Desfazer a saída de ${p.nome}?`,
+        texto: `Motivo: ${motivo}.`,
+        impacto: acao === 'anular'
+          ? 'A passagem deixa de contar. Fica no histórico como anulada.'
+          : `${p.nome} volta a estar no contrato e a poder assinar em campo.`,
+        acao: 'Confirmar', tom: 'perigo' });
+      if (!ok) return;
+    }
+    $('btn-corr').disabled = true;
+    const { error } = await db.rpc('rh_corrigir_vinculo', {
+      p_codigo: p.codigo_publico, p_acao: acao,
+      p_data: ['entrada','fim'].includes(acao) ? $('c-data').value : null, p_motivo: motivo });
+    $('btn-corr').disabled = false;
+    if (error) { log(5, frase(error), 'erro'); return; }
+    nCorr++;
+    log(5, `Correção gravada para ${p.nome}.`, 'ok');
+    resumoPasso(5, `${nCorr} correção(ões) nesta sessão`, 'ok');
+    $('c-motivo').value = ''; $('c-quem').textContent = '';
+    await recarregar();
+  });
+
+  // ── avançado ──
+  $('btn-hist').addEventListener('click', async () => {
+    const p = acharPessoa($('h-busca').value);
+    if (!p) { log(6, 'Escolha a pessoa na lista.', 'erro'); return; }
+    const { data, error } = await db.rpc('rh_historico', { p_codigo: p.codigo_publico });
+    if (error) { log(6, frase(error), 'erro'); return; }
+    log(6, `${data.nome}: ${estadoTxt[data.estado] || data.estado}`);
+    (data.passagens || []).forEach(v => log(6,
+      `  passagem: ${dataBR(v.entrada)} até ${v.fim ? dataBR(v.fim) : 'hoje'}${v.anulado ? ' (ANULADA: ' + v.anulado_motivo + ')' : ''}${v.motivo_saida ? ' · saída: ' + v.motivo_saida : ''}`));
+    (data.eventos || []).forEach(e => log(6,
+      `  ${new Date(e.quando).toLocaleString('pt-BR', { timeZone:'America/Sao_Paulo' })} · ${e.tipo} · ${e.papel || 'sistema'}${e.motivo ? ' · ' + e.motivo : ''}`));
+  });
+  $('btn-csv').addEventListener('click', () => {
+    const cab = ['nome','codigo','funcao','empresa','situacao','entrada','saida','pode_ir_a_campo','motivos'];
+    const lin = todos.map(p => [p.nome, p.codigo_publico, p.funcao, p.empresa, estadoTxt[p.estado] || p.estado,
+      dataBR(p.entrada), dataBR(p.fim), p.pode_campo ? 'sim' : 'não',
+      (p.motivos || []).map(m => motivoTxt[m] || m).join(' / ')]);
+    const csv = [cab, ...lin].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `efetivo-${hojeBR()}.csv`; a.click();
+    log(6, `CSV com ${todos.length} pessoa(s) baixado.`, 'ok');
+  });
+
+  async function recarregar(){
+    try { await carregarTodos(); } catch (e) { log(2, frase(e), 'erro'); }
+    await carregarDia();
+  }
+
+  try {
+    await carregarTodos();
+  } catch (e) {
+    $('linhas2').innerHTML = `<tr><td colspan="4" class="vazio">${esc(frase(e))}</td></tr>`;
+    resumoPasso(2, 'não carregou', 'warn');
+  }
+  await carregarDia();
+
+  // atalho do painel: efetivo.html#passo2 abre direto o passo
+  const alvo = (location.hash.match(/^#passo(\d)$/) || [])[1];
+  if (alvo) abrirPasso(alvo);
+})();
+</script>
+</body>
+</html>
