@@ -15,6 +15,7 @@ Function da Vercel. O upload de documento vai por uma Edge Function do Supabase.
 | `login.html`, `reset-senha.html` | RH, admin | e-mail e senha; papel `rh` ou `admin` em `roles.sigmatr` |
 | `shell.html` | RH | **Gestão do RH**: o caminho de cada contratação, da requisição ao contrato |
 | `acessos.html` | RH | marca quem pode pedir e quem pode aprovar contratação |
+| `demonstrativo.html` | quem for apresentar | botão **Demonstração** no menu: o caminho todo com dados de mentira, sem login e sem tocar no banco |
 | `lista-documentos.html` | RH | a lista de documentos que o candidato vê no link (obrigatório, só com CNH, cônjuge, filho) |
 | `requisicao.html` | supervisor, coordenador | link pessoal do treinamento (`?k=`) e PIN |
 | `aprovacao.html` | gerente | link pessoal do treinamento (`?k=`) e PIN |

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Demonstração</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: uma coluna estreita; o caminho da contratação em ordem, cada etapa abre a tela de quem age nela. */
+  :root{--bg:#F1F4F9;--card:#FFFFFF;--fg:#1F2937;--soft:#4B5563;--muted:#6B7280;--line:#E2E8F0;
+    --accent:#0F4CBA;--accent-bg:#EFF6FF;--warn:#B45309;--warn-bg:#FFFBEB;
+    --font-d:'Exo 2',system-ui,sans-serif;--font-ui:'Inter',system-ui,sans-serif}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F141C;--card:#171E29;--fg:#E5E9F0;--soft:#B6BFCC;
+    --muted:#8C96A6;--line:#2A3342;--accent:#7FA6F2;--accent-bg:#1A2740;--warn:#F3B566;--warn-bg:#2A2114;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#0F141C;--card:#171E29;--fg:#E5E9F0;--soft:#B6BFCC;--muted:#8C96A6;--line:#2A3342;
+    --accent:#7FA6F2;--accent-bg:#1A2740;--warn:#F3B566;--warn-bg:#2A2114;color-scheme:dark}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:15px;line-height:1.55}
+  .pg{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:32px 48px;display:grid;gap:22px}
+  .topo{display:flex;align-items:center;gap:12px}
+  .marca{width:44px;height:44px;border-radius:11px;background:#0F4CBA;color:#fff;display:flex;align-items:center;
+    justify-content:center;font:800 26px var(--font-d);flex:none}
+  .topo b{font:700 22px var(--font-d);display:block;line-height:1.1}
+  .topo span{color:var(--muted);font-size:13.5px}
+  h1{font:700 clamp(24px,4vw,30px)/1.2 var(--font-d);text-wrap:balance;margin:0}
+  p{margin:0;color:var(--soft);max-width:65ch}
+  .aviso{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:14px;font-weight:500}
+  .aviso b{font-weight:700}
+  ol{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:e}
+  li{counter-increment:e;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    display:grid;grid-template-columns:34px 1fr auto;gap:4px 14px;align-items:center}
+  li::before{content:counter(e);grid-row:span 2;width:30px;height:30px;border-radius:50%;background:var(--accent-bg);
+    color:var(--accent);font:700 14px var(--font-ui);display:flex;align-items:center;justify-content:center}
+  .quem{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .oque{font-weight:600;font-size:15.5px;min-width:0}
+  .txt{grid-column:2;font-size:13.5px;color:var(--soft);min-width:0}
+  li a{grid-column:3;grid-row:1 / span 2;align-self:center;text-decoration:none;background:#0F4CBA;color:#fff;
+    font-weight:600;font-size:14px;border-radius:10px;padding:12px 16px;white-space:nowrap}
+  li a:focus-visible,.extra a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  li.rh{border-color:var(--accent)}
+  .extra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--soft)}
+  .extra a{color:var(--accent);font-weight:600}
+  .rodape{font-size:12.5px;color:var(--muted)}
+  .reiniciar{background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:10px;min-height:44px;
+    padding:0 14px;font:600 14px var(--font-ui);cursor:pointer}
+  @media (max-width:560px){li{grid-template-columns:34px 1fr}li a{grid-column:1 / -1;grid-row:auto;text-align:center;margin-top:8px}}
+</style>
+</head>
+<body>
+<div class="pg">
+  <div class="topo"><span class="marca" aria-hidden="true">&Sigma;</span>
+    <div><b>Sigma RH</b><span>RH operacional do contrato GCB · demonstração</span></div></div>
+
+  <div>
+    <h1>Uma contratação, do pedido do supervisor até o contrato</h1>
+    <p style="margin-top:8px">Cada etapa abre a tela de quem age nela. As telas de supervisor, gerente e candidato
+      são para celular; a Gestão do RH é para o computador.</p>
+  </div>
+
+  <div class="aviso"><b>Dados de mentira.</b> Nada vai para o banco. As telas conversam entre si neste navegador:
+    o pedido que você fizer como supervisor aparece para o gerente, e assim por diante. Quando pedir PIN, use <b>1234</b>.</div>
+
+  <ol>
+    <li><span class="quem">Supervisor ou coordenador · celular</span><span class="oque">Pede a contratação</span>
+      <span class="txt">Requisição FOR-RH-02, uma pergunta por tela, assinada com o PIN.</span>
+      <a href="requisicao.html?demo=1">Abrir</a></li>
+    <li><span class="quem">Gerente · celular</span><span class="oque">Aprova ou recusa</span>
+      <span class="txt">Vê os pedidos por supervisor e decide um por vez, com o PIN.</span>
+      <a href="aprovacao.html?demo=1">Abrir</a></li>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Manda o link de documentos</span>
+      <span class="txt">Na Gestão do RH, etapa "Aprovadas": gera o link e abre o WhatsApp com a mensagem pronta.</span>
+      <a href="shell.html?demo=1">Abrir</a></li>
+    <li><span class="quem">Candidato · celular</span><span class="oque">Responde e envia os documentos</span>
+      <span class="txt">Calçado, uniforme, CNH, família, e uma foto por documento. Pode parar e voltar.</span>
+      <a href="documentos.html?demo=1">Abrir</a></li>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Confere e coloca no contrato</span>
+      <span class="txt">Etapa "Conferir documentos": aprova ou recusa cada um. Depois, "Candidatos": coloca no contrato.</span>
+      <a href="shell.html?demo=1">Abrir</a></li>
+  </ol>
+
+  <div class="extra">Também: <a href="acessos.html?demo=1">Quem pede e aprova</a> e <a href="lista-documentos.html?demo=1">Lista de documentos</a> (o que o RH cadastra antes).</div>
+  <div class="extra"><button type="button" id="reiniciar" class="reiniciar">Recomeçar a demonstração do zero</button>
+    <span id="reiniciado" class="rodape" hidden>Pronto, tudo voltou aos exemplos do início.</span></div>
+  <p class="rodape">A lista de documentos desta demonstração é um exemplo. A real sai da lista de admissão da GCB.<br>Dica para apresentar: abra o celular do supervisor, depois o do gerente, e mostre o pedido chegando na Gestão do RH.</p>
+</div>
+<script>
+document.getElementById('reiniciar').addEventListener('click', () => {
+  try { localStorage.removeItem('sigmarh_demo_v1'); localStorage.removeItem('sigmarh_demo_v2'); } catch (e) {}
+  document.getElementById('reiniciado').hidden = false;
+});
+</script>
+</body>
+</html>

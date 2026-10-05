@@ -42,6 +42,9 @@ const SigmaRH = (() => {
     { grupo: 'Principal' },
     { id: 'painel',  label: 'Gestão do RH',         href: 'shell.html',
       icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10' },
+    // abre em outra aba, com dados de mentira: serve para apresentar o fluxo sem tocar no banco
+    { id: 'demo',    label: 'Demonstração',         href: 'demonstrativo.html', novaAba: true,
+      icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM10 8l6 4-6 4z' },
     { grupo: 'Cadastros' },
     { id: 'acessos', label: 'Quem pede e aprova',   href: 'acessos.html',
       icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4' },
@@ -326,7 +329,7 @@ body.rh-pub{background:#F1F4F9;font-size:17px}
       if (it.grupo) return `<div class="grupo">${esc(it.grupo)}</div>`;
       const ic = `<svg viewBox="0 0 24 24"><path d="${it.icon}"/></svg>`;
       if (it.em_breve) return `<span class="item">${ic}${esc(it.label)}<small>${esc(it.em_breve)}</small></span>`;
-      return `<a href="${it.href}"${it.id === pagina ? ' aria-current="page"' : ''}>${ic}${esc(it.label)}</a>`;
+      return `<a href="${it.href}"${it.id === pagina ? ' aria-current="page"' : ''}${it.novaAba ? ' target="_blank" rel="noopener" data-fixo' : ''}>${ic}${esc(it.label)}</a>`;
     }).join('') + `<div class="contrato">${esc(BRAND.contrato)}<br>GCB Manutenção</div>`;
   }
 
@@ -396,7 +399,7 @@ body.rh-pub{background:#F1F4F9;font-size:17px}
     // sessão encerrada em outra aba: volta ao login
     if (!DEMO) db.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') window.location.replace('login.html'); });
     if (DEMO) {
-      wrap.querySelectorAll('.rh-side a').forEach(a => a.href = comDemo(a.getAttribute('href')));
+      wrap.querySelectorAll('.rh-side a:not([data-fixo])').forEach(a => a.href = comDemo(a.getAttribute('href')));
       faixaDemo();
     }
 
