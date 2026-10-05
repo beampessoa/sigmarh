@@ -1,32 +1,40 @@
 # Sigma RH (rh.sigmacode.com.br)
 
 Front do Sigma RH: HTML, CSS e JS puros, sem build. Banco: Supabase do E-SIGMA
-(projeto kiwiykgzogcxiseynzyy), schema `sigmatr`, tudo por RPC.
+(projeto kiwiykgzogcxiseynzyy), schema `sigmatr`, tudo por RPC. Nenhuma Serverless
+Function da Vercel. O upload de documento vai por uma Edge Function do Supabase.
 
-## Arquivos
+**Para ver as telas sem banco:** abra qualquer página com `?demo=1`
+(ex.: `shell.html?demo=1`). Dados de mentira, nada é gravado. PIN da demonstração: 1234.
 
-| Arquivo | O que é |
-|---|---|
-| `index.html` | Porta: com sessão vai ao painel, sem sessão vai ao login |
-| `login.html` | E-mail e senha. Só entra quem tem papel `rh` ou `admin` em `app_metadata.roles.sigmatr` |
-| `reset-senha.html` | Destino do link "Esqueci minha senha" |
-| `shell.html` | Painel: números do dia e atalhos |
-| `efetivo.html` | Tela em passos: lista do dia, revisão em lote, entrada, saída, correção |
-| `rh-ui.js` | Casca: cabeçalho, menu, guarda de papel, toast, confirmação, erros em português |
-| `vercel.json` | URLs limpas e cabeçalhos de segurança (sem cache, sem indexação, sem iframe) |
+## Páginas
 
-Nenhuma Serverless Function: o limite de 12 da Vercel não é tocado.
+| Página | Quem usa | Como entra |
+|---|---|---|
+| `index.html` | todos | porta: manda para o painel ou para o login |
+| `login.html`, `reset-senha.html` | RH, admin | e-mail e senha; papel `rh` ou `admin` em `roles.sigmatr` |
+| `shell.html` | RH | **Gestão do RH**: o caminho de cada contratação, da requisição ao contrato |
+| `acessos.html` | RH | marca quem pode pedir e quem pode aprovar contratação |
+| `requisicao.html` | supervisor, coordenador | link pessoal do treinamento (`?k=`) e PIN |
+| `aprovacao.html` | gerente | link pessoal do treinamento (`?k=`) e PIN |
+| `documentos.html` | candidato | link de documentação gerado pelo RH (`?k=`) |
+| `rh-ui.js` | todas | casca, guarda de papel, PIN, janelas, erros em português |
+| `rh-demo.js` | todas | dados do modo demonstração; também é o contrato das RPCs |
+
+## Caminho de uma contratação
+
+1. Supervisor faz a requisição (FOR-RH-02) e assina com PIN.
+2. Gerente aprova ou recusa com PIN. Diretoria assina o PDF fora do sistema.
+3. RH gera o link de documentação e manda no WhatsApp.
+4. Candidato responde os dados dele e envia os documentos (Drive do RH).
+5. RH confere documento por documento e aprova a admissão: a pessoa vira candidata e treina.
+6. RH coloca no contrato (data de entrada e matrícula Petrobras).
 
 ## Para colocar no ar
 
-1. Banco: aplicar `mt24_sigma_rh_vinculos.sql` e `mt25_sigma_rh_fecho_desligado.sql`
-   (só com aprovação). Sem elas, as telas abrem e mostram "Esta função ainda não foi instalada".
-2. Vercel: projeto novo apontando para este repositório, sem framework, sem build.
-   Em Domains, adicionar `rh.sigmacode.com.br`.
-3. DNS do sigmacode.com.br: registro CNAME `rh` para `cname.vercel-dns.com`.
-4. Supabase, Authentication, URL Configuration: acrescentar
-   `https://rh.sigmacode.com.br/**` em Redirect URLs (senão o link de senha nova volta
-   para o site errado).
-5. Contas do RH: em Authentication, Users, criar o usuário e gravar em
-   `raw_app_meta_data` o papel: `{"roles": {"sigmatr": "rh"}}`. O papel só vale depois
-   de um novo login.
+1. Banco: migrations do Sigma RH (mt24, mt25 e as da requisição/documentos), só com aprovação.
+2. Edge Function `rh-doc-upload` (Drive do RH), presa ao link do candidato.
+3. Vercel: projeto novo para este repositório, domínio `rh.sigmacode.com.br`;
+   DNS: CNAME `rh` para `cname.vercel-dns.com`.
+4. Supabase, Authentication, URL Configuration: `https://rh.sigmacode.com.br/**` em Redirect URLs.
+5. Contas do RH: `raw_app_meta_data` = `{"roles": {"sigmatr": "rh"}}`.

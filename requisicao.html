@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Pedir contratação</title>
+<style>
+  .resumo-req{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-bottom:16px}
+  .resumo-req div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #F1F3F7;font-size:15px}
+  .resumo-req div:last-child{border-bottom:0}
+  .resumo-req span{color:var(--muted)}
+  .resumo-req b{text-align:right;color:var(--graphite)}
+  .voltar{background:none;border:0;color:var(--blue);font:600 16px var(--font-ui);min-height:48px;cursor:pointer;padding:0;margin-top:8px}
+  .pedido{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+  .pedido b{display:block;font-size:16px}
+  .pedido small{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main id="tela"><p class="guia">Abrindo...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+/* Requisição de pessoal (FOR-RH-02) feita pelo supervisor ou coordenador.
+   Entra pelo link pessoal do treinamento (?k=token) e assina com o PIN.
+   Uma pergunta por tela. Tocar numa opção já avança. */
+const VERSAO = '2026-10-05 · requisição';
+(async () => {
+  console.log('[Sigma RH] ' + VERSAO);
+  const { token } = SigmaRH.publico({ titulo: 'Pedir contratação' });
+  const { esc, rpc, frase, pedirPin } = SigmaRH;
+  const tela = document.getElementById('tela');
+  const erro = t => `<div class="recado erro">${esc(t)}</div>`;
+
+  if (!token) { tela.innerHTML = erro('Abra esta página pelo seu link pessoal do treinamento.'); return; }
+
+  const eu = await rpc('req_quem_sou', { p_token: token });
+  if (eu.error) { tela.innerHTML = erro(frase(eu.error)); return; }
+  if (!eu.data.pode_pedir) {
+    tela.innerHTML = `<h1>Olá, ${esc(eu.data.nome.split(' ')[0])}</h1>` +
+      erro('Você ainda não está liberado para pedir contratação. Peça ao RH para liberar.');
+    return;
+  }
+  const op = await rpc('req_opcoes', { p_token: token });
+  if (op.error) { tela.innerHTML = erro(frase(op.error)); return; }
+  const O = op.data;
+
+  // respostas
+  const R = { local: O.locais.length === 1 ? O.locais[0] : '' };
+
+  // ── as perguntas, na ordem do FOR-RH-02 ──
+  const PASSOS = [
+    { id: 'candidato', tit: 'Quem vai ser contratado?', tipo: 'campos', campos: [
+        { k: 'candidato_nome', rot: 'Nome completo', ph: 'Como está no documento', obrig: true, maiusc: true },
+        { k: 'candidato_whatsapp', rot: 'WhatsApp com DDD', ph: '21 99999 9999', obrig: true, tel: true } ] },
+    { id: 'cargo', tit: 'Qual o cargo?', tipo: 'opcoes', k: 'cargo', ops: O.cargos, uma: true },
+    { id: 'area', tit: 'Em qual área?', tipo: 'opcoes', k: 'area', ops: O.areas },
+    { id: 'local', tit: 'Qual obra ou local?', tipo: 'opcoes', k: 'local', ops: O.locais, pula: () => O.locais.length === 1 },
+    { id: 'tipo', tit: 'Tipo de contratação', tipo: 'opcoes', k: 'tipo', ops: ['Efetivo', 'Temporário', 'Estágio', 'Aprendiz'] },
+    { id: 'contrato', tit: 'Tipo de contrato', tipo: 'opcoes', k: 'contrato',
+      ops: ['Experiência 30 dias', 'Experiência 60 dias', 'Experiência 90 dias', 'Determinado', 'Outro'], pula: () => R.tipo !== 'Efetivo' },
+    { id: 'contrato_outro', tit: 'Qual o tipo de contrato?', tipo: 'campos', pula: () => R.contrato !== 'Outro',
+      campos: [{ k: 'contrato_detalhe', rot: 'Explique (e o vencimento, se houver)', obrig: true }] },
+    { id: 'jornada', tit: 'Jornada de trabalho', tipo: 'opcoes', k: 'jornada', ops: ['1º turno', '2º turno', '3º turno', 'Administrativo'] },
+    { id: 'recrutamento', tit: 'Recrutamento', tipo: 'opcoes', k: 'recrutamento', ops: ['Externo', 'Interno'] },
+    { id: 'motivo', tit: 'Por que contratar?', tipo: 'opcoes', k: 'motivo', ops: ['Aumento de quadro', 'Substituição'] },
+    { id: 'substituido', tit: 'Quem está sendo substituído?', tipo: 'lista', k: 'substituido_codigo',
+      pula: () => R.motivo !== 'Substituição' },
+    { id: 'formacao', tit: 'Formação exigida', tipo: 'opcoes', k: 'formacao',
+      ops: ['Fundamental', 'Médio', 'Técnico', 'Graduação', 'Pós-graduação', 'Outra'] },
+    { id: 'atividades', tit: 'Atividades e experiência', tipo: 'campos', campos: [
+        { k: 'funcao_especifica', rot: 'Função específica (opcional)', ph: 'Ex.: soldador TIG de tubulação' },
+        { k: 'atividades', rot: 'Principais atividades', area: true, obrig: true, ph: 'O que a pessoa vai fazer' },
+        { k: 'experiencia', rot: 'Experiência e qualificações (opcional)', area: true, ph: 'Conforme currículo, cursos, NR...' } ] },
+    { id: 'revisar', tit: 'Confira e assine', tipo: 'revisar' },
+  ];
+
+  let i = 0;
+  const ativos = () => PASSOS.filter(p => !(p.pula && p.pula()));
+  const ir = n => { i = n; pintar(); window.scrollTo(0, 0); };
+  const avancar = () => { const a = ativos(); const at = a.indexOf(PASSOS[i]); ir(PASSOS.indexOf(a[at + 1])); };
+  const voltar = () => { const a = ativos(); const at = a.indexOf(PASSOS[i]); if (at > 0) ir(PASSOS.indexOf(a[at - 1])); else inicio(); };
+
+  function cabeca(p) {
+    const a = ativos(), at = a.indexOf(p) + 1;
+    return `<div class="passo-n">Pergunta ${at} de ${a.length}</div>
+      <div class="barra"><span style="width:${Math.round(100 * at / a.length)}%"></span></div>
+      <h1>${esc(p.tit)}</h1>`;
+  }
+
+  function pintar() {
+    const p = PASSOS[i];
+    let h = cabeca(p);
+    if (p.tipo === 'opcoes') {
+      h += `<div class="opcoes ${p.uma ? 'uma' : ''}">${p.ops.map(o =>
+        `<button type="button" data-v="${esc(o)}" aria-pressed="${R[p.k] === o}">${esc(o)}</button>`).join('')}</div>`;
+    } else if (p.tipo === 'campos') {
+      h += `<div id="err"></div>` + p.campos.map(c => `<div class="st-field"><label for="c-${c.k}">${esc(c.rot)}</label>
+        ${c.area ? `<textarea id="c-${c.k}" placeholder="${esc(c.ph || '')}">${esc(R[c.k] || '')}</textarea>`
+                 : `<input id="c-${c.k}" ${c.tel ? 'inputmode="tel" autocomplete="tel"' : ''} placeholder="${esc(c.ph || '')}" value="${esc(R[c.k] || '')}">`}
+        </div>`).join('') + `<button class="st-btn" id="seguir">Continuar</button>`;
+    } else if (p.tipo === 'lista') {
+      h += `<p class="guia">Escolha a pessoa que saiu ou vai sair.</p>
+        <div class="st-field"><input id="busca-sub" placeholder="Digite o nome" autocomplete="off"></div>
+        <div class="opcoes uma" id="lista-sub"></div>`;
+    } else if (p.tipo === 'revisar') {
+      const sub = O.efetivo.find(e => e.codigo === R.substituido_codigo);
+      const linhas = [
+        ['Candidato', R.candidato_nome], ['WhatsApp', R.candidato_whatsapp], ['Cargo', R.cargo], ['Área', R.area],
+        ['Local', R.local], ['Tipo', R.tipo], ['Contrato', R.contrato === 'Outro' ? R.contrato_detalhe : R.contrato],
+        ['Jornada', R.jornada], ['Recrutamento', R.recrutamento], ['Motivo', R.motivo],
+        ['Substitui', sub ? sub.nome : null], ['Formação', R.formacao], ['Atividades', R.atividades] ].filter(l => l[1]);
+      h += `<div class="resumo-req">${linhas.map(l => `<div><span>${esc(l[0])}</span><b>${esc(l[1])}</b></div>`).join('')}</div>
+        <p class="guia">Ao assinar, o pedido vai para o gerente aprovar. Depois de aprovado, o RH manda o link de documentos para ${esc((R.candidato_nome || '').split(' ')[0])}.</p>
+        <div id="err"></div><button class="st-btn" id="assinar">Assinar com meu PIN</button>`;
+    }
+    h += `<button class="voltar" id="voltar">&#8249; Voltar</button>`;
+    tela.innerHTML = h;
+
+    if (p.tipo === 'lista') pintarLista('');
+    const b = document.getElementById('busca-sub');
+    if (b) b.addEventListener('input', () => pintarLista(b.value));
+  }
+
+  function pintarLista(q) {
+    q = q.trim().toLowerCase();
+    const l = O.efetivo.filter(e => !q || e.nome.toLowerCase().includes(q)).slice(0, 30);
+    document.getElementById('lista-sub').innerHTML = l.length ? l.map(e =>
+      `<button type="button" data-sub="${esc(e.codigo)}" aria-pressed="${R.substituido_codigo === e.codigo}">${esc(e.nome)}<br><small>${esc(e.funcao)}</small></button>`).join('')
+      : '<p class="guia">Ninguém com esse nome no contrato.</p>';
+  }
+
+  tela.addEventListener('click', async ev => {
+    const p = PASSOS[i];
+    if (ev.target.closest('#voltar')) { voltar(); return; }
+    const o = ev.target.closest('.opcoes [data-v]');
+    if (o) { R[p.k] = o.dataset.v; pintar(); setTimeout(avancar, 180); return; }
+    const s = ev.target.closest('[data-sub]');
+    if (s) { R.substituido_codigo = s.dataset.sub; setTimeout(avancar, 120); return; }
+    if (ev.target.closest('#seguir')) {
+      for (const c of p.campos) {
+        let v = document.getElementById('c-' + c.k).value.trim();
+        if (c.maiusc) v = v.toUpperCase();
+        if (c.tel) v = v.replace(/\D/g, '');
+        if (c.obrig && !v) { document.getElementById('err').innerHTML = erro(`Preencha: ${c.rot}.`); return; }
+        if (c.tel && v.length < 10) { document.getElementById('err').innerHTML = erro('O WhatsApp precisa ter DDD e número.'); return; }
+        if (c.k === 'candidato_nome' && v.split(/\s+/).length < 2) { document.getElementById('err').innerHTML = erro('Escreva o nome completo, com sobrenome.'); return; }
+        R[c.k] = v;
+      }
+      avancar(); return;
+    }
+    if (ev.target.closest('#assinar')) {
+      const pin = await pedirPin({ titulo: 'Assinar o pedido', texto: 'Digite seu PIN de 4 números.' });
+      if (!pin) return;
+      const btn = document.getElementById('assinar'); btn.disabled = true; btn.textContent = 'Enviando...';
+      const { data, error } = await rpc('req_criar', { p_token: token, p_pin: pin, p_dados: R });
+      if (error) { btn.disabled = false; btn.textContent = 'Assinar com meu PIN';
+        document.getElementById('err').innerHTML = erro(frase(error)); return; }
+      tela.innerHTML = `<div class="recado ok"><b>Pedido ${esc(data.numero)} enviado.</b><br>
+        Agora é com o gerente. Você acompanha em "Meus pedidos".</div>
+        <button class="st-btn" id="novo">Fazer outro pedido</button>
+        <button class="voltar" id="ver">Ver meus pedidos</button>`;
+    }
+  });
+
+  // tela de entrada: pedir ou acompanhar
+  async function inicio() {
+    tela.innerHTML = `<h1>Olá, ${esc(eu.data.nome.split(' ')[0])}</h1>
+      <p class="guia">Aqui você pede a contratação de uma pessoa. Um pedido por pessoa.</p>
+      <button class="st-btn" id="novo">Pedir contratação</button>
+      <button class="voltar" id="ver">Ver meus pedidos</button>`;
+  }
+  const ETAPA = { aguardando_gerente: 'Aguardando o gerente', aprovada: 'Aprovado, RH vai mandar o link',
+    link_enviado: 'Link enviado, aguardando documentos', conferir: 'RH conferindo documentos',
+    candidato: 'Admitido, em treinamento', contrato: 'No contrato', recusada: 'Recusado' };
+  async function meus() {
+    tela.innerHTML = '<p class="guia">Carregando...</p>';
+    const { data, error } = await rpc('req_minhas', { p_token: token });
+    if (error) { tela.innerHTML = erro(frase(error)); return; }
+    tela.innerHTML = `<h1>Meus pedidos</h1>` + ((data || []).length ? data.map(r => `<div class="pedido">
+      <b>${esc(r.nome)}</b><small>${esc(r.funcao)} · ${esc(r.numero)}</small><br>
+      <span class="st-tarja" data-s="${r.etapa === 'recusada' ? 'nao' : r.etapa === 'aguardando_gerente' ? 'aviso' : 'ok'}">${esc(ETAPA[r.etapa] || r.etapa)}</span>
+      ${r.motivo_recusa ? `<small><br>Motivo: ${esc(r.motivo_recusa)}</small>` : ''}</div>`).join('')
+      : '<p class="guia">Você ainda não fez nenhum pedido.</p>') + `<button class="voltar" id="ini">&#8249; Voltar</button>`;
+  }
+  document.addEventListener('click', ev => {
+    if (ev.target.closest('#novo')) { for (const k in R) if (k !== 'local') delete R[k]; ir(0); }
+    if (ev.target.closest('#ver')) meus();
+    if (ev.target.closest('#ini')) inicio();
+  });
+  inicio();
+})();
+</script>
+</body>
+</html>

@@ -4,120 +4,338 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Sigma RH · Painel</title>
+<title>Sigma RH · Gestão do RH</title>
 <style>
-  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
-  .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--sh);
-    display:flex;align-items:center;gap:12px}
-  .kpi-ic{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
-  .kpi-ic svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2}
-  .kpi-val{font-family:var(--font-d);font-size:28px;font-weight:700;color:var(--graphite);line-height:1}
-  .kpi-lbl{font-size:12.5px;color:var(--muted);margin-top:4px}
-  .kpi[data-k="contrato"] .kpi-ic{background:#EFF6FF;color:#0F4CBA}
-  .kpi[data-k="campo"] .kpi-ic{background:#DCFCE7;color:#16A34A}
-  .kpi[data-k="cand"] .kpi-ic{background:#FFF7ED;color:#C2410C}
-  .kpi[data-k="sairam"] .kpi-ic{background:#F1F5F9;color:#475569}
+  /* Caminho da pessoa: da requisição até o contrato. Cada etapa é um botão. */
+  .trilha{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+  .etapa{flex:1 0 128px;min-height:92px;background:#fff;border:2px solid var(--line);border-radius:12px;
+    padding:12px 14px;text-align:left;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;
+    justify-content:space-between;box-shadow:var(--sh);position:relative}
+  .etapa:hover{border-color:#93B4F0}
+  .etapa[aria-pressed="true"]{border-color:var(--blue);background:#EFF6FF}
+  .etapa .n{font-family:var(--font-d);font-size:30px;font-weight:700;color:var(--graphite);line-height:1}
+  .etapa .t{font-size:13px;font-weight:600;color:var(--ink-soft);line-height:1.3}
+  .etapa .quem{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .etapa[data-acao="rh"] .quem{color:#B45309}
+  .etapa[data-acao="rh"][data-tem="1"]{border-color:#F59E0B}
+  .etapa[data-acao="rh"][data-tem="1"][aria-pressed="true"]{border-color:var(--blue)}
+  .seta{align-self:center;color:#94A3B8;font-size:18px;flex:none}
+  .extras{display:flex;gap:16px;margin:0 0 18px;font-size:13.5px}
+  .extras button{background:none;border:0;color:var(--blue);font:600 13.5px var(--font-ui);cursor:pointer;
+    min-height:40px;padding:0 2px}
+  .extras button[aria-pressed="true"]{text-decoration:underline}
 
-  .alerta{display:none;margin-bottom:22px;padding:14px 16px;border-radius:12px;background:#FFFBEB;
-    border:1px solid #FDE68A;color:#92400E;font-size:14px;line-height:1.55}
-  .alerta.show{display:block}
-  .alerta a{color:#92400E;font-weight:700;text-decoration:underline}
+  .lista-cab{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .lista-cab h2{font-family:var(--font-d);font-size:19px;color:var(--graphite)}
+  .lista-cab p{font-size:13.5px;color:var(--muted);flex:1 1 100%;line-height:1.5}
+  .lista-cab input{min-height:44px;border:1.5px solid #D7DEEA;border-radius:10px;padding:0 12px;font-size:15px;
+    background:var(--field);margin-left:auto;width:260px}
+  .linha{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:8px;box-shadow:var(--sh)}
+  .linha .quem{flex:1;min-width:0}
+  .linha .nome{font-weight:700;color:var(--graphite);font-size:15px}
+  .linha .sub{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .linha .st-btn{flex:none;min-height:46px;font-size:14.5px}
+  .vazio{background:#fff;border:1px dashed #CBD5E1;border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
+  .prog{display:inline-block;width:90px;height:7px;border-radius:99px;background:#E2E8F0;vertical-align:middle;margin-right:6px;overflow:hidden}
+  .prog span{display:block;height:100%;background:var(--blue)}
 
-  .atalhos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:var(--sh);display:block;
-    min-height:140px;transition:border-color .15s,transform .12s}
-  a.card:hover{border-color:#5B8AE6;transform:translateY(-2px)}
-  .card-ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-  .card-ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
-  .card-title{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--graphite);margin-bottom:4px}
-  .card-desc{font-size:13px;color:var(--muted);line-height:1.5}
-  .card.em-breve{opacity:.55}
-  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:#FEF9C3;
-    color:#854D0E;margin-top:8px}
-  @media(max-width:860px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+  /* janelas */
+  .jan .st-modal-in{max-height:85vh;overflow:auto}
+  .jan .st-field{margin-bottom:12px}
+  .jan .erro{display:none;margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#FEF2F2;border:1px solid #FECACA;
+    color:#B91C1C;font-size:14px}
+  .jan .erro.show{display:block}
+  .jan.larga{width:min(760px,calc(100vw - 32px))}
+  .doc{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F1F3F7;flex-wrap:wrap}
+  .doc .dn{flex:1 1 220px;font-size:14px;font-weight:600;color:var(--graphite)}
+  .doc .bts{display:flex;gap:6px;flex:none}
+  .doc .dn small{display:block;font-weight:400;color:var(--muted)}
+  .doc .st-btn{min-height:40px;padding:0 12px;font-size:13.5px}
+  .dados{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13.5px;margin-bottom:14px;
+    background:#F8FAFC;border-radius:10px;padding:10px 12px}
+  .dados b{color:var(--graphite)}
+  @media(max-width:700px){.linha{flex-wrap:wrap}.linha .st-btn{width:100%}.lista-cab input{width:100%;margin:0}}
 </style>
 </head>
 <body data-pagina="painel">
 <div id="app">
   <div class="content">
     <div class="st-page-head">
-      <h1>Painel do Sigma RH</h1>
-      <p>Situação do efetivo hoje. Os números vêm do banco na hora em que a página abre.</p>
+      <h1>Gestão do RH</h1>
+      <p>O caminho de cada contratação, da requisição até o contrato. Toque numa etapa para ver quem está nela.
+         As etapas com <b style="color:#B45309">VEZ DO RH</b> esperam uma ação sua.</p>
     </div>
 
-    <div class="alerta" id="alerta"></div>
-
-    <div class="kpi-strip">
-      <div class="kpi" data-k="contrato"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg></div>
-        <div><div class="kpi-val" id="k-contrato">...</div><div class="kpi-lbl">no contrato hoje</div></div></div>
-      <div class="kpi" data-k="campo"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <div><div class="kpi-val" id="k-campo">...</div><div class="kpi-lbl">podem ir a campo</div></div></div>
-      <div class="kpi" data-k="cand"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
-        <div><div class="kpi-val" id="k-cand">...</div><div class="kpi-lbl">candidatos a revisar</div></div></div>
-      <div class="kpi" data-k="sairam"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
-        <div><div class="kpi-val" id="k-sairam">...</div><div class="kpi-lbl">saíram do contrato</div></div></div>
+    <div class="trilha" id="trilha"></div>
+    <div class="extras">
+      <button type="button" data-etapa="recusada" aria-pressed="false">Recusadas pelo gerente (<span id="n-recusada">0</span>)</button>
+      <button type="button" data-etapa="saiu" aria-pressed="false">Saíram do contrato (<span id="n-saiu">0</span>)</button>
     </div>
 
-    <div class="atalhos">
-      <a class="card" href="efetivo.html">
-        <div class="card-ic" style="background:#EFF6FF;color:#0F4CBA"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <div class="card-title">Efetivo no contrato</div>
-        <div class="card-desc">Quem está no contrato, quem pode ir a campo e por que não.</div></a>
-      <a class="card" href="efetivo.html#passo2">
-        <div class="card-ic" style="background:#FFF7ED;color:#C2410C"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M3 6l1.2 1.2L7 4.5M3 12l1.2 1.2L7 10.5M3 18l1.2 1.2L7 16.5"/></svg></div>
-        <div class="card-title">Revisar candidatos</div>
-        <div class="card-desc">Marcar de uma vez quem continua e quem sai.</div></a>
-      <a class="card" href="efetivo.html#passo3">
-        <div class="card-ic" style="background:#DCFCE7;color:#16A34A"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 8v6M23 11h-6"/></svg></div>
-        <div class="card-title">Entrada no contrato</div>
-        <div class="card-desc">Colocar uma pessoa no contrato ou trazer de volta.</div></a>
-      <a class="card" href="efetivo.html#passo4">
-        <div class="card-ic" style="background:#FEF2F2;color:#B91C1C"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 11h-6"/></svg></div>
-        <div class="card-title">Saída do contrato</div>
-        <div class="card-desc">Tirar uma pessoa do contrato, com data e motivo.</div></a>
-      <div class="card em-breve">
-        <div class="card-ic" style="background:#F1F5F9;color:#64748B"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg></div>
-        <div class="card-title">Documentos de admissão</div>
-        <div class="card-desc">Lista da GCB, link para a pessoa enviar e conferência do RH.</div>
-        <span class="tag">Fase 2</span></div>
-      <div class="card em-breve">
-        <div class="card-ic" style="background:#F1F5F9;color:#64748B"><svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></div>
-        <div class="card-title">Afastamentos</div>
-        <div class="card-desc">Atestado, férias e suspensão, com o efeito no campo.</div>
-        <span class="tag">Fase 2</span></div>
+    <div class="lista-cab">
+      <h2 id="lista-tit"></h2>
+      <input type="search" id="busca" placeholder="Buscar por nome" autocomplete="off">
+      <p id="lista-txt"></p>
     </div>
+    <div id="lista"></div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
 <script>
+const VERSAO = '2026-10-05 · gestão do RH';
 (async () => {
   const quem = await SigmaRH.init();
   if (!quem) return;
-  SigmaRH.versaoPagina('2026-10-05 · painel');
+  SigmaRH.versaoPagina(VERSAO);
 
+  const { esc, rpc, fmt, toast, frase } = SigmaRH;
   const $ = id => document.getElementById(id);
-  const { data, error } = await SigmaRH.db.rpc('rh_efetivo', { p_data: SigmaRH.fmt.hoje(), p_todos: true });
-  if (error) {
-    ['k-contrato','k-campo','k-cand','k-sairam'].forEach(k => $(k).textContent = '?');
-    $('alerta').textContent = SigmaRH.frase(error);
-    $('alerta').classList.add('show');
-    return;
-  }
-  const todos = data || [];
-  const noContrato = todos.filter(p => p.no_contrato);
-  const cand = todos.filter(p => p.estado === 'candidato').length;
-  $('k-contrato').textContent = noContrato.length;
-  $('k-campo').textContent    = noContrato.filter(p => p.pode_campo).length;
-  $('k-cand').textContent     = cand;
-  $('k-sairam').textContent   = todos.filter(p => p.estado === 'desmobilizado').length;
+  const dataBR = fmt.data;
+  const dias = d => { if (!d) return ''; const n = Math.round((new Date(fmt.hoje()) - new Date(d)) / 864e5);
+    return n <= 0 ? 'hoje' : n === 1 ? 'há 1 dia' : `há ${n} dias`; };
 
-  if (cand) {
-    $('alerta').innerHTML = `<b>${cand} pessoa(s) ainda como candidata(s).</b> Enquanto não forem revisadas, `
-      + `não entram na lista de quem está no contrato. <a href="efetivo.html#passo2">Revisar agora</a>.`;
-    $('alerta').classList.add('show');
+  // ── as etapas, na ordem do caminho ──
+  const ETAPAS = [
+    { id: 'aguardando_gerente', t: 'Aguardando o gerente', quem: 'vez do gerente',
+      txt: 'Requisições feitas pelos supervisores que o gerente ainda não aprovou. Nada a fazer aqui: o gerente aprova pelo link dele.' },
+    { id: 'aprovada', t: 'Aprovadas: mandar o link', quem: 'vez do RH', acao: 'rh',
+      txt: 'O gerente aprovou. Gere o link de documentação e mande no WhatsApp da pessoa. O link vale por 7 dias e só serve para ela.' },
+    { id: 'link_enviado', t: 'Aguardando documentos', quem: 'vez do candidato',
+      txt: 'Link enviado, a pessoa ainda não terminou de mandar os documentos. Se passar do prazo, reenvie.' },
+    { id: 'conferir', t: 'Conferir documentos', quem: 'vez do RH', acao: 'rh',
+      txt: 'A pessoa terminou de enviar. Abra cada documento, aprove ou recuse com o motivo. Com tudo aprovado, ela vira candidata e pode treinar.' },
+    { id: 'candidato', t: 'Candidatos', quem: 'vez do RH', acao: 'rh',
+      txt: 'Documentos aprovados (ou efetivo antigo). Já podem treinar. Coloque no contrato quando a pessoa começar a trabalhar. Precisa de matrícula Petrobras.' },
+    { id: 'contrato', t: 'No contrato', quem: 'ativos',
+      txt: 'Quem está no contrato hoje. "Pode ir a campo" exige PIN cadastrado e treinamentos da função em dia.' },
+  ];
+  const EXTRAS = {
+    recusada: { t: 'Recusadas pelo gerente', txt: 'Requisições que o gerente recusou, com o motivo. O supervisor pode fazer uma nova.' },
+    saiu:     { t: 'Saíram do contrato', txt: 'Quem já saiu, com a data e o motivo. O histórico assinado fica guardado.' },
+  };
+
+  let atual = null, linhas = [], contas = {};
+
+  function pintarTrilha() {
+    $('trilha').innerHTML = ETAPAS.map((e, i) => `
+      ${i ? '<span class="seta" aria-hidden="true">&#8250;</span>' : ''}
+      <button type="button" class="etapa" data-etapa="${e.id}" data-acao="${e.acao || ''}"
+        data-tem="${contas[e.id] ? 1 : 0}" aria-pressed="${atual === e.id}">
+        <span class="quem">${esc(e.quem)}</span>
+        <span class="n">${contas[e.id] ?? '...'}</span>
+        <span class="t">${esc(e.t)}</span>
+      </button>`).join('');
+    $('n-recusada').textContent = contas.recusada ?? 0;
+    $('n-saiu').textContent = contas.saiu ?? 0;
+    document.querySelectorAll('.extras button').forEach(b => b.setAttribute('aria-pressed', b.dataset.etapa === atual));
   }
+
+  async function carregarContas() {
+    const { data, error } = await rpc('rh_painel');
+    if (error) { $('lista').innerHTML = `<div class="vazio">${esc(frase(error))}</div>`; return false; }
+    contas = data || {};
+    return true;
+  }
+
+  async function abrirEtapa(id) {
+    atual = id; pintarTrilha();
+    const e = ETAPAS.find(x => x.id === id) || EXTRAS[id];
+    $('lista-tit').textContent = e.t;
+    $('lista-txt').textContent = e.txt;
+    $('lista').innerHTML = '<div class="vazio">Carregando...</div>';
+    const { data, error } = await rpc('rh_fila', { p_etapa: id });
+    if (error) { $('lista').innerHTML = `<div class="vazio">${esc(frase(error))}</div>`; return; }
+    linhas = data || [];
+    pintarLista();
+  }
+
+  function sub(r) {
+    switch (atual) {
+      case 'aguardando_gerente': return `${esc(r.funcao)} · pedido por ${esc(r.supervisor)} · ${dias(r.desde)} · ${esc(r.numero)}`;
+      case 'aprovada':     return `${esc(r.funcao)} · aprovada ${dias(r.desde)} · pedido por ${esc(r.supervisor)}`;
+      case 'link_enviado': return `<span class="prog"><span style="width:${r.total ? Math.round(100 * r.enviados / r.total) : 0}%"></span></span>
+                                   ${r.enviados || 0} de ${r.total || 0} documentos · link enviado ${dias(r.desde)}`;
+      case 'conferir':     return `${esc(r.funcao)} · terminou de enviar ${dias(r.desde)} · ${r.enviados} documento(s)`;
+      case 'candidato':    return `${esc(r.funcao)} · candidato ${dias(r.desde)}${r.tem_matricula_petrobras ? '' : ' · <b style="color:#B45309">sem matrícula Petrobras</b>'}`;
+      case 'contrato':     return `${esc(r.funcao)} · entrou em ${dataBR(r.entrada)} · ${r.pode_campo ? '<b style="color:#15803D">pode ir a campo</b>' : '<b style="color:#B91C1C">não pode ir a campo</b> (' + esc((r.motivos || []).map(m => ({sem_pin:'sem PIN',inapto_matriz:'falta treinamento',pin_bloqueado:'PIN bloqueado'})[m] || m).join(', ')) + ')'}`;
+      case 'recusada':     return `${esc(r.funcao)} · pedido por ${esc(r.supervisor)} · motivo: ${esc(r.motivo_recusa || 'não informado')}`;
+      case 'saiu':         return `${esc(r.funcao)} · de ${dataBR(r.entrada)} a ${dataBR(r.fim)} · ${esc(r.motivo || '')}`;
+    }
+    return '';
+  }
+  const BOTAO = {
+    aprovada: 'Gerar link e mandar', link_enviado: 'Reenviar link', conferir: 'Conferir documentos',
+    candidato: 'Colocar no contrato', contrato: 'Tirar do contrato'
+  };
+
+  function pintarLista() {
+    const q = ($('busca').value || '').trim().toLowerCase();
+    const l = linhas.filter(r => !q || (r.nome || '').toLowerCase().includes(q));
+    if (!l.length) { $('lista').innerHTML = `<div class="vazio">${linhas.length ? 'Ninguém com esse nome.' : 'Ninguém nesta etapa agora.'}</div>`; return; }
+    $('lista').innerHTML = l.map((r, i) => `
+      <div class="linha">
+        <div class="quem"><div class="nome">${esc(r.nome)}</div><div class="sub">${sub(r)}</div></div>
+        ${BOTAO[atual] ? `<button type="button" class="st-btn" ${atual === 'contrato' || atual === 'link_enviado' ? 'data-tom="quieto"' : ''}
+          data-i="${linhas.indexOf(r)}">${BOTAO[atual]}</button>` : ''}
+      </div>`).join('');
+  }
+
+  // ── janela genérica ──
+  function janela(html, aoAbrir) {
+    const d = document.createElement('dialog');
+    d.className = 'st-modal jan';
+    d.innerHTML = `<div class="st-modal-in">${html}</div>`;
+    document.body.appendChild(d);
+    d.addEventListener('close', () => d.remove());
+    d.addEventListener('click', ev => { if (ev.target.closest('[data-fechar]')) d.close(); });
+    d.showModal();
+    if (aoAbrir) aoAbrir(d);
+    return d;
+  }
+  // pergunta curta por cima da janela aberta (sem prompt() do navegador)
+  function pedirTexto(titulo, texto) {
+    return new Promise(res => {
+      const d = janela(`<h2>${esc(titulo)}</h2><p>${esc(texto)}</p>
+        <div class="st-field"><input id="pt" maxlength="200" placeholder="Ex.: foto tremida, não dá para ler"></div>
+        <div class="st-modal-acts"><button class="st-btn" data-tom="quieto" data-fechar>Cancelar</button>
+        <button class="st-btn" id="pt-ok">Recusar</button></div>`);
+      let v = null;
+      d.querySelector('#pt-ok').onclick = () => { v = d.querySelector('#pt').value.trim(); if (v) d.close(); };
+      d.addEventListener('close', () => res(v));
+      d.querySelector('#pt').focus();
+    });
+  }
+  const erroEm = (d, txt) => { const e = d.querySelector('.erro'); e.textContent = txt; e.classList.add('show'); };
+
+  async function recarregar() { await carregarContas(); await abrirEtapa(atual); }
+
+  // ── ações ──
+  async function gerarLink(r) {
+    const { data, error } = await rpc('rh_gerar_link', { p_numero: r.numero });
+    if (error) { toast(frase(error), 'erro'); return; }
+    const tel = String(data.telefone || '').replace(/\D/g, '');
+    const msg = `Olá, ${data.nome.split(' ')[0]}! Aqui é o RH da GCB. Para seguir com a sua admissão como ${r.funcao}, `
+      + `mande seus documentos por este link (vale por ${data.prazo_dias} dias): ${data.link}`;
+    janela(`<h2>Link de ${esc(data.nome)}</h2>
+      <p>Mande pelo WhatsApp. O link só serve para esta pessoa.</p>
+      <div class="st-field"><label>Link</label><input readonly value="${esc(data.link)}" id="lk"></div>
+      <div class="st-modal-acts">
+        <button class="st-btn" data-tom="quieto" data-fechar>Fechar</button>
+        <button class="st-btn" data-tom="quieto" id="copiar">Copiar link</button>
+        <a class="st-btn" target="_blank" rel="noopener" href="https://wa.me/55${tel}?text=${encodeURIComponent(msg)}">Abrir WhatsApp</a>
+      </div>`, d => {
+        d.querySelector('#copiar').onclick = async () => {
+          try { await navigator.clipboard.writeText(data.link); toast('Link copiado.', 'ok'); }
+          catch (e) { d.querySelector('#lk').select(); }
+        };
+        d.addEventListener('close', recarregar);
+      });
+  }
+
+  async function conferir(r) {
+    const { data, error } = await rpc('rh_conferencia', { p_numero: r.numero });
+    if (error) { toast(frase(error), 'erro'); return; }
+    const sit = { enviado: ['aviso','Enviado'], aprovado: ['ok','Aprovado'], recusado: ['nao','Recusado'], pendente: ['neutro','Faltando'] };
+    const html = () => {
+      const faltam = data.itens.filter(i => i.situacao !== 'aprovado').length;
+      return `<h2>Documentos de ${esc(data.nome)}</h2>
+      <p>${esc(data.funcao)} · requisição ${esc(data.numero)} · pedido por ${esc(data.supervisor)}</p>
+      <div class="erro"></div>
+      <div class="dados">${Object.entries(data.dados || {}).map(([k, v]) =>
+        `<span>${esc(({cpf_final:'CPF',calcado:'Calçado',uniforme:'Uniforme',cnh:'CNH',parente_gcb:'Parente na GCB',indicado_por:'Indicado por'})[k] || k)}: <b>${esc(v)}</b></span>`).join('')}</div>
+      ${data.itens.map(i => `<div class="doc">
+        <span class="dn">${esc(i.nome)}${i.motivo ? `<small>Recusado: ${esc(i.motivo)}</small>` : ''}</span>
+        <span class="st-tarja" data-s="${sit[i.situacao][0]}">${sit[i.situacao][1]}</span>
+        <span class="bts">
+        ${i.arquivo_url ? `<a class="st-btn" data-tom="quieto" target="_blank" rel="noopener" href="${esc(i.arquivo_url)}">Abrir</a>`
+                        : `<button class="st-btn" data-tom="quieto" disabled title="Na demonstração não há arquivo">Abrir</button>`}
+        <button class="st-btn" data-ok="${esc(i.codigo)}">Aprovar</button>
+        <button class="st-btn" data-tom="perigo" data-nao="${esc(i.codigo)}">Recusar</button></span>
+      </div>`).join('')}
+      <div class="st-modal-acts" style="margin-top:16px">
+        <button class="st-btn" data-tom="quieto" data-fechar>Fechar</button>
+        <button class="st-btn" id="admitir" ${faltam ? 'disabled' : ''}>${faltam ? `Faltam ${faltam} para aprovar` : 'Aprovar admissão'}</button>
+      </div>`;
+    };
+    const d = janela(html()); d.classList.add('larga');
+    const repintar = () => { d.querySelector('.st-modal-in').innerHTML = html(); };
+    d.addEventListener('click', async ev => {
+      const ok = ev.target.closest('[data-ok]'), nao = ev.target.closest('[data-nao]');
+      if (ok || nao) {
+        let motivo = null;
+        if (nao) { motivo = await pedirTexto('Por que recusar?', 'A pessoa vai ver este motivo e mandar o documento de novo.'); if (!motivo) return; }
+        const item = (ok || nao).dataset.ok || (ok || nao).dataset.nao;
+        const res = await rpc('rh_doc_decidir', { p_numero: r.numero, p_item: item, p_aprovar: !!ok, p_motivo: motivo });
+        if (res.error) { erroEm(d, frase(res.error)); return; }
+        const it = data.itens.find(x => x.codigo === item); it.situacao = ok ? 'aprovado' : 'recusado'; it.motivo = motivo;
+        repintar();
+      }
+      if (ev.target.closest('#admitir')) {
+        const res = await rpc('rh_aprovar_admissao', { p_numero: r.numero });
+        if (res.error) { erroEm(d, frase(res.error)); return; }
+        d.close(); toast(`${data.nome} agora é candidato e já pode treinar.`, 'ok'); recarregar();
+      }
+    });
+  }
+
+  function colocarNoContrato(r) {
+    janela(`<h2>Colocar ${esc(r.nome)} no contrato</h2>
+      <p>A partir desta data a pessoa aparece no efetivo do dia, no campo e no RDC.</p>
+      <div class="erro"></div>
+      <div class="st-field"><label for="j-ent">Começou a trabalhar em</label><input type="date" id="j-ent" value="${fmt.hoje()}" max="${fmt.hoje()}"></div>
+      ${r.tem_matricula_petrobras ? '' : `<div class="st-field"><label for="j-mat">Matrícula Petrobras</label>
+        <input id="j-mat" inputmode="numeric" maxlength="20" placeholder="Obrigatória para entrar no contrato"></div>`}
+      <div class="st-modal-acts"><button class="st-btn" data-tom="quieto" data-fechar>Cancelar</button>
+        <button class="st-btn" id="j-ok">Colocar no contrato</button></div>`, d => {
+      d.querySelector('#j-ok').onclick = async () => {
+        const mat = d.querySelector('#j-mat');
+        const { error } = await rpc('rh_mobilizar', { p_codigo: r.codigo, p_entrada: d.querySelector('#j-ent').value,
+          p_empresa: null, p_matricula: mat ? mat.value.trim() || null : null });
+        if (error) { erroEm(d, frase(error)); return; }
+        d.close(); toast(`${r.nome} está no contrato.`, 'ok'); recarregar();
+      };
+    });
+  }
+
+  function tirarDoContrato(r) {
+    janela(`<h2>Tirar ${esc(r.nome)} do contrato</h2>
+      <p>A partir da data a pessoa não assina mais em campo, não faz prova e não recebe link. O PIN e o histórico ficam guardados.</p>
+      <div class="erro"></div>
+      <div class="st-field"><label for="j-fim">Primeiro dia que NÃO trabalha mais</label><input type="date" id="j-fim" value="${fmt.hoje()}" max="${fmt.hoje()}"></div>
+      <div class="st-field"><label for="j-mot">Motivo</label><input id="j-mot" maxlength="200" placeholder="Ex.: fim da parada de manutenção"></div>
+      <div class="st-modal-acts"><button class="st-btn" data-tom="quieto" data-fechar>Cancelar</button>
+        <button class="st-btn" data-tom="perigo" id="j-ok">Tirar do contrato</button></div>`, d => {
+      d.querySelector('#j-ok').onclick = async () => {
+        const { error } = await rpc('rh_desmobilizar', { p_codigo: r.codigo, p_fim: d.querySelector('#j-fim').value,
+          p_motivo: d.querySelector('#j-mot').value.trim(), p_entrada: null });
+        if (error) { erroEm(d, frase(error)); return; }
+        d.close(); toast(`${r.nome} saiu do contrato.`, 'ok'); recarregar();
+      };
+    });
+  }
+
+  // ── eventos ──
+  document.addEventListener('click', ev => {
+    const et = ev.target.closest('[data-etapa]');
+    if (et) { abrirEtapa(et.dataset.etapa); return; }
+    const b = ev.target.closest('#lista [data-i]');
+    if (!b) return;
+    const r = linhas[+b.dataset.i];
+    if (atual === 'aprovada' || atual === 'link_enviado') gerarLink(r);
+    else if (atual === 'conferir') conferir(r);
+    else if (atual === 'candidato') colocarNoContrato(r);
+    else if (atual === 'contrato') tirarDoContrato(r);
+  });
+  $('busca').addEventListener('input', pintarLista);
+
+  if (!(await carregarContas())) return;
+  // abre na primeira etapa que espera o RH; se nenhuma, no contrato
+  const primeira = ETAPAS.find(e => e.acao === 'rh' && contas[e.id]) || ETAPAS.find(e => e.id === 'contrato');
+  abrirEtapa(primeira.id);
 })();
 </script>
 </body>

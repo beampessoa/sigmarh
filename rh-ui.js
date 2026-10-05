@@ -33,25 +33,56 @@ const SigmaRH = (() => {
     bucket:   'https://kiwiykgzogcxiseynzyy.supabase.co/storage/v1/object/public/LOGO-Empresas/',
     logo:     'sigmacode.png',
     produto:  'Sigma RH',
-    subtitulo:'Efetivo do contrato',
+    subtitulo:'RH operacional do contrato',
     contrato: 'Contrato SAP 4600686554'
   };
 
   // Menu. "em_breve" aparece apagado e não navega.
   const NAV = [
     { grupo: 'Principal' },
-    { id: 'painel',  label: 'Painel',               href: 'shell.html',
+    { id: 'painel',  label: 'Gestão do RH',         href: 'shell.html',
       icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10' },
-    { grupo: 'Pessoas' },
-    { id: 'efetivo', label: 'Efetivo no contrato',  href: 'efetivo.html',
-      icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
-    { id: 'documentos', label: 'Documentos de admissão', em_breve: 'fase 2',
+    { grupo: 'Cadastros' },
+    { id: 'acessos', label: 'Quem pede e aprova',   href: 'acessos.html',
+      icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4' },
+    { id: 'documentos', label: 'Lista de documentos', em_breve: 'aguarda lista',
       icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6' },
+    { id: 'importar', label: 'Importar efetivo atual', em_breve: 'depois',
+      icon: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3' },
     { id: 'afastamentos', label: 'Afastamentos', em_breve: 'fase 2',
       icon: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z' },
   ];
 
   let db = null;
+
+  /* MODO DEMONSTRAÇÃO: qualquer página com ?demo=1 roda com dados de mentira
+     (rh-demo.js), sem login e sem tocar no banco. Serve para avaliar as telas
+     antes das migrations existirem. Uma faixa amarela avisa o tempo todo. */
+  const DEMO = new URLSearchParams(location.search).has('demo');
+
+  /* Toda chamada ao banco passa por aqui. No demo, responde o rh-demo.js. */
+  async function rpc(nome, args) {
+    if (DEMO) {
+      const m = window.SigmaRHDemo && window.SigmaRHDemo[nome];
+      if (!m) return { data: null, error: { message: 'Demonstração sem dados para ' + nome + '.' } };
+      await new Promise(r => setTimeout(r, 250));
+      try { return { data: m(args || {}), error: null }; }
+      catch (e) { return { data: null, error: { message: e.message } }; }
+    }
+    return conectar().rpc(nome, args || {});
+  }
+  /* Edge Function com arquivo (upload de documento). Sem login: quem prova
+     identidade é o link da pessoa, que vai dentro do FormData. */
+  async function enviarArquivo(nomeFuncao, form) {
+    try {
+      const r = await fetch(`${URL_SB}/functions/v1/${nomeFuncao}`, {
+        method: 'POST', headers: { apikey: KEY_SB, Authorization: 'Bearer ' + KEY_SB }, body: form });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.ok === false) return { data: null, error: { message: j.erro || 'Não foi possível enviar. Tente de novo.' } };
+      return { data: j, error: null };
+    } catch (e) { return { data: null, error: { message: 'Sem conexão. Confira a internet e tente de novo.' } }; }
+  }
+  const comDemo = href => DEMO ? href + (href.includes('?') ? '&' : '?') + 'demo=1' : href;
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -120,7 +151,7 @@ a{color:inherit;text-decoration:none}
   grid-template-areas:"head head" "side main";min-height:100vh}
 .rh-head{grid-area:head;position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:14px;padding:0 20px;box-shadow:var(--sh)}
-.rh-head img{height:34px;width:auto}
+.rh-head img{height:34px;width:auto;max-width:180px;object-fit:contain;flex:none}
 .rh-head .prod{display:flex;flex-direction:column;line-height:1.15}
 .rh-head .prod b{font-family:var(--font-d);font-size:16px;color:var(--graphite)}
 .rh-head .prod span{font-size:11.5px;color:var(--muted)}
@@ -182,6 +213,42 @@ a{color:inherit;text-decoration:none}
 .st-impact{margin:0 0 18px;padding:12px 14px;border-radius:8px;background:#FEF2F2;border:1px solid #FECACA;
   color:#991B1B;font-size:13.5px;line-height:1.5}
 .st-modal-acts{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.rh-demo{position:fixed;left:0;right:0;bottom:0;z-index:90;background:#FDE047;color:#713F12;
+  text-align:center;font-weight:700;font-size:13px;padding:6px 10px}
+/* páginas por link (supervisor, gerente, candidato): campo, sol, luva */
+body.rh-pub{background:#F1F4F9;font-size:17px}
+.rh-pub-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}
+.rh-pub-head img{height:30px;width:auto;max-width:150px;object-fit:contain;flex:none}
+.rh-pub-head .prod{display:flex;flex-direction:column;line-height:1.15}
+.rh-pub-head .prod b{font-family:var(--font-d);font-size:16px;color:var(--graphite)}
+.rh-pub-head .prod span{font-size:13px;color:var(--muted)}
+.rh-pub main{max-width:560px;margin:0 auto;padding:16px 16px 80px}
+.rh-pub h1{font-family:var(--font-d);font-size:24px;color:var(--graphite);margin:6px 0 6px}
+.rh-pub .guia{font-size:16px;color:var(--ink-soft);line-height:1.5;margin-bottom:16px}
+.rh-pub .st-btn{width:100%;min-height:58px;font-size:18px}
+.rh-pub .st-field label{font-size:16px}
+.rh-pub .st-field input,.rh-pub .st-field select,.rh-pub .st-field textarea{min-height:56px;font-size:18px}
+.rh-pub .st-field textarea{padding:12px;min-height:110px}
+.opcoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.opcoes button{min-height:58px;border:2px solid #CBD5E1;background:#fff;border-radius:12px;font:600 16px var(--font-ui);
+  color:var(--graphite);cursor:pointer;padding:6px 10px}
+.opcoes button[aria-pressed="true"]{border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
+.opcoes.uma{grid-template-columns:1fr}
+.passo-n{font-size:14px;font-weight:700;color:var(--blue);letter-spacing:.04em;text-transform:uppercase}
+.barra{height:8px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin:8px 0 18px}
+.barra span{display:block;height:100%;background:var(--blue);transition:width .2s}
+.recado{padding:14px 16px;border-radius:12px;font-size:16px;line-height:1.5;margin-bottom:16px;border:1px solid}
+.recado.ok{background:#F0FDF4;border-color:#BBF7D0;color:#166534}
+.recado.erro{background:#FEF2F2;border-color:#FECACA;color:#B91C1C}
+.recado.info{background:#EFF6FF;border-color:#BFDBFE;color:#1E3A8A}
+.rh-pin .st-modal-in{text-align:center}
+.rh-pin-casas{display:flex;justify-content:center;gap:14px;margin:10px 0 18px}
+.rh-pin-casa{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--graphite)}
+.rh-pin-casa.cheia{background:var(--graphite)}
+.rh-pin-teclas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rh-pin-teclas button{min-height:64px;border:1px solid var(--line);border-radius:12px;background:#F8FAFC;
+  font:700 24px var(--font-ui);color:var(--graphite);cursor:pointer}
+.rh-pin-teclas button.sec{font-size:15px;font-weight:600;color:var(--ink-soft)}
 .rh-bloqueio{max-width:460px;margin:12vh auto;text-align:center}
 .rh-bloqueio h1{font-family:var(--font-d);font-size:22px;margin-bottom:10px}
 .rh-bloqueio p{color:var(--ink-soft);margin-bottom:20px;line-height:1.6}
@@ -249,6 +316,8 @@ a{color:inherit;text-decoration:none}
     if (!app) { document.body.textContent = 'Página sem <div id="app">.'; return null; }
     app.style.display = 'none';
 
+    if (DEMO) return montar({ user: { email: 'demonstração' } }, 'rh');
+
     let ss;
     try { conectar(); ss = await sessao(); }
     catch (e) { app.style.display = ''; app.innerHTML = `<p style="padding:24px">${esc(frase(e))}</p>`; return null; }
@@ -267,6 +336,11 @@ a{color:inherit;text-decoration:none}
       return null;
     }
 
+    return montar(ss, papel);
+  }
+
+  function montar(ss, papel) {
+    const app = document.getElementById('app');
     const pagina = document.body.dataset.pagina || '';
     const wrap = document.createElement('div');
     wrap.className = 'rh-app';
@@ -298,9 +372,66 @@ a{color:inherit;text-decoration:none}
       { side.dataset.aberto = side.dataset.aberto === '1' ? '0' : '1'; };
 
     // sessão encerrada em outra aba: volta ao login
-    db.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') window.location.replace('login.html'); });
+    if (!DEMO) db.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') window.location.replace('login.html'); });
+    if (DEMO) {
+      wrap.querySelectorAll('.rh-side a').forEach(a => a.href = comDemo(a.getAttribute('href')));
+      faixaDemo();
+    }
 
     return { papel, email: ss.user.email };
+  }
+
+  function faixaDemo() {
+    const f = document.createElement('div');
+    f.className = 'rh-demo';
+    f.textContent = 'DEMONSTRAÇÃO: dados de mentira, nada é gravado.';
+    document.body.appendChild(f);
+  }
+
+  /* Páginas abertas por link (supervisor, gerente, candidato): sem login, sem
+     menu. Só o cabeçalho com a marca. O token vem na URL (?k=...). */
+  function publico({ titulo = '' } = {}) {
+    injetarCSS();
+    document.body.classList.add('rh-pub');
+    const h = document.createElement('header');
+    h.className = 'rh-pub-head';
+    h.innerHTML = `<img src="${BRAND.bucket + BRAND.logo}" alt="SIGMA CODE Engenharia">
+      <div class="prod"><b>${esc(BRAND.produto)}</b><span>${esc(titulo)}</span></div>`;
+    document.body.insertBefore(h, document.body.firstChild);
+    if (DEMO) faixaDemo();
+    const k = new URLSearchParams(location.search).get('k') || (DEMO ? 'demo' : '');
+    return { token: k, demo: DEMO };
+  }
+
+  /* Teclado de PIN: botões grandes para dedo de luva. Devolve uma Promise com
+     os 4 dígitos, ou null se a pessoa cancelar. */
+  function pedirPin({ titulo = 'Confirme com seu PIN', texto = '' } = {}) {
+    return new Promise(res => {
+      let v = '';
+      const d = document.createElement('dialog');
+      d.className = 'st-modal rh-pin';
+      const pintar = () => d.querySelectorAll('.rh-pin-casa').forEach((c, i) =>
+        c.classList.toggle('cheia', i < v.length));
+      d.innerHTML = `<div class="st-modal-in"><h2>${esc(titulo)}</h2>
+        ${texto ? `<p>${esc(texto)}</p>` : ''}
+        <div class="rh-pin-casas">${'<span class="rh-pin-casa"></span>'.repeat(4)}</div>
+        <div class="rh-pin-teclas">
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" data-n="${n}">${n}</button>`).join('')}
+          <button type="button" data-x="cancelar" class="sec">Cancelar</button>
+          <button type="button" data-n="0">0</button>
+          <button type="button" data-x="apagar" class="sec">Apagar</button>
+        </div></div>`;
+      document.body.appendChild(d);
+      d.addEventListener('click', ev => {
+        const b = ev.target.closest('button'); if (!b) return;
+        if (b.dataset.x === 'cancelar') { d.close(); d.remove(); res(null); return; }
+        if (b.dataset.x === 'apagar') { v = v.slice(0, -1); pintar(); return; }
+        if (v.length < 4) { v += b.dataset.n; pintar(); }
+        if (v.length === 4) setTimeout(() => { d.close(); d.remove(); res(v); }, 150);
+      });
+      d.addEventListener('cancel', () => { d.remove(); res(null); });
+      d.showModal();
+    });
   }
 
   function versaoPagina(v) {
@@ -309,8 +440,8 @@ a{color:inherit;text-decoration:none}
     if (el) el.textContent = 'página ' + v;
   }
 
-  return { VERSAO, BRAND, init, conectar, sessao, sair, papelDaSessao, PAPEIS,
-           esc, fmt, frase, toast, confirmar, versaoPagina,
+  return { VERSAO, BRAND, init, conectar, sessao, sair, papelDaSessao, PAPEIS, DEMO,
+           esc, fmt, frase, toast, confirmar, versaoPagina, rpc, comDemo, publico, pedirPin, enviarArquivo,
            get db() { return conectar(); } };
 })();
 

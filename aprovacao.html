@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Aprovar contratações</title>
+<style>
+  .sup{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:14px;
+    padding:14px 16px;margin-bottom:10px;cursor:pointer;font-family:inherit}
+  .sup[data-tem="1"]{border-color:#F59E0B}
+  .sup b{display:block;font-size:17px;color:var(--graphite);margin-bottom:8px}
+  .nums{display:flex;gap:8px;flex-wrap:wrap}
+  .num{font-size:14px;padding:5px 10px;border-radius:99px;font-weight:700}
+  .num.ag{background:#FFFBEB;color:#B45309}.num.ap{background:#F0FDF4;color:#15803D}.num.re{background:#FEF2F2;color:#B91C1C}
+  .req{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-bottom:14px}
+  .req div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #F1F3F7;font-size:15px}
+  .req div:last-child{border-bottom:0}
+  .req span{color:var(--muted)}.req b{text-align:right}
+  .dois{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .voltar{background:none;border:0;color:var(--blue);font:600 16px var(--font-ui);min-height:48px;cursor:pointer;padding:0;margin-top:8px}
+</style>
+</head>
+<body>
+<main id="tela"><p class="guia">Abrindo...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+/* Aprovação das requisições pelo gerente. Link pessoal (?k=token) e PIN.
+   Primeiro a contagem por supervisor; tocando num nome, as requisições dele,
+   uma por vez, com Aprovar ou Recusar. */
+const VERSAO = '2026-10-05 · aprovação';
+(async () => {
+  console.log('[Sigma RH] ' + VERSAO);
+  const { token } = SigmaRH.publico({ titulo: 'Aprovar contratações' });
+  const { esc, rpc, frase, pedirPin } = SigmaRH;
+  const tela = document.getElementById('tela');
+  const erro = t => `<div class="recado erro">${esc(t)}</div>`;
+  if (!token) { tela.innerHTML = erro('Abra esta página pelo seu link pessoal do treinamento.'); return; }
+
+  const eu = await rpc('ger_quem_sou', { p_token: token });
+  if (eu.error) { tela.innerHTML = erro(frase(eu.error)); return; }
+  if (!eu.data.pode_aprovar) { tela.innerHTML = erro('Você não está liberado para aprovar contratações. Fale com o RH.'); return; }
+
+  let grupos = [], fila = [], pos = 0;
+
+  async function painel() {
+    tela.innerHTML = '<p class="guia">Carregando...</p>';
+    const { data, error } = await rpc('ger_painel', { p_token: token });
+    if (error) { tela.innerHTML = erro(frase(error)); return; }
+    grupos = data || [];
+    const total = grupos.reduce((s, g) => s + g.aguardando, 0);
+    tela.innerHTML = `<h1>Olá, ${esc(eu.data.nome.split(' ')[0])}</h1>
+      <p class="guia">${total ? `<b>${total} pedido(s)</b> esperando a sua aprovação.` : 'Nenhum pedido esperando você.'}
+      Toque num nome para ver os pedidos.</p>` +
+      grupos.map((g, i) => `<button class="sup" data-g="${i}" data-tem="${g.aguardando ? 1 : 0}">
+        <b>${esc(g.supervisor)}</b>
+        <span class="nums"><span class="num ag">${g.aguardando} aguardando</span>
+        <span class="num ap">${g.aprovadas} aprovadas</span><span class="num re">${g.recusadas} recusadas</span></span>
+      </button>`).join('');
+  }
+
+  async function mostrar() {
+    if (pos >= fila.length) { await painel(); return; }
+    const r = fila[pos];
+    tela.innerHTML = '<p class="guia">Carregando...</p>';
+    const { data: d, error } = await rpc('ger_detalhe', { p_token: token, p_numero: r.numero });
+    if (error) { tela.innerHTML = erro(frase(error)); return; }
+    const linhas = [['Pedido', d.numero], ['Pedido por', d.supervisor], ['Candidato', d.nome], ['Cargo', d.funcao],
+      ['Área', d.area], ['Local', d.local], ['Tipo', d.tipo], ['Contrato', d.contrato], ['Jornada', d.jornada],
+      ['Recrutamento', d.recrutamento], ['Motivo', d.motivo_vaga], ['Substitui', d.substituido],
+      ['Formação', d.formacao], ['Atividades', d.atividades]].filter(l => l[1]);
+    tela.innerHTML = `<div class="passo-n">Pedido ${pos + 1} de ${fila.length}</div>
+      <h1>${esc(d.nome)}</h1>
+      <div class="req">${linhas.map(l => `<div><span>${esc(l[0])}</span><b>${esc(l[1])}</b></div>`).join('')}</div>
+      <div id="err"></div>
+      <div class="dois"><button class="st-btn" data-tom="perigo" id="recusar">Recusar</button>
+      <button class="st-btn" id="aprovar">Aprovar</button></div>
+      <button class="voltar" id="voltar">&#8249; Voltar para a lista</button>`;
+  }
+
+  async function decidir(aprovar) {
+    let motivo = null;
+    if (!aprovar) {
+      tela.querySelector('#err').innerHTML = `<div class="st-field"><label for="mot">Por que recusar? O supervisor vai ver.</label>
+        <textarea id="mot" placeholder="Ex.: vaga já preenchida"></textarea></div>
+        <button class="st-btn" data-tom="perigo" id="conf-rec">Confirmar recusa</button>`;
+      tela.querySelector('.dois').style.display = 'none';
+      return;
+    }
+    await enviar(true, null);
+  }
+  async function enviar(aprovar, motivo) {
+    const pin = await pedirPin({ titulo: aprovar ? 'Aprovar este pedido' : 'Recusar este pedido', texto: 'Digite seu PIN de 4 números.' });
+    if (!pin) return;
+    const { error } = await rpc('ger_decidir', { p_token: token, p_pin: pin, p_numero: fila[pos].numero, p_aprovar: aprovar, p_motivo: motivo });
+    if (error) { tela.querySelector('#err').insertAdjacentHTML('afterbegin', erro(frase(error))); return; }
+    pos++;
+    if (pos < fila.length) {
+      tela.innerHTML = `<div class="recado ok">${aprovar ? 'Aprovado.' : 'Recusado.'} Indo para o próximo.</div>`;
+      setTimeout(mostrar, 700);
+    } else {
+      tela.innerHTML = `<div class="recado ok">${aprovar ? 'Aprovado.' : 'Recusado.'} Não há mais pedidos deste supervisor.</div>`;
+      setTimeout(painel, 1200);
+    }
+  }
+
+  tela.addEventListener('click', async ev => {
+    const g = ev.target.closest('[data-g]');
+    if (g) {
+      fila = grupos[+g.dataset.g].requisicoes || []; pos = 0;
+      if (!fila.length) { tela.insertAdjacentHTML('afterbegin', '<div class="recado info">Nenhum pedido aguardando deste supervisor.</div>'); return; }
+      mostrar(); return;
+    }
+    if (ev.target.closest('#aprovar')) decidir(true);
+    if (ev.target.closest('#recusar')) decidir(false);
+    if (ev.target.closest('#conf-rec')) {
+      const m = tela.querySelector('#mot').value.trim();
+      if (m.length < 5) { tela.querySelector('#mot').focus(); return; }
+      enviar(false, m);
+    }
+    if (ev.target.closest('#voltar')) painel();
+  });
+  painel();
+})();
+</script>
+</body>
+</html>

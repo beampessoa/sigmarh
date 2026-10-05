@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Documentos de admissão</title>
+<style>
+  .item{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+  .item[data-s="enviado"],.item[data-s="aprovado"]{border-color:#BBF7D0;background:#F7FEF9}
+  .item[data-s="recusado"]{border-color:#FECACA;background:#FFF8F8}
+  .item b{display:block;font-size:17px;color:var(--graphite)}
+  .item small{display:block;font-size:14px;color:var(--muted);margin:4px 0 10px;line-height:1.45}
+  .item .rec{color:#B91C1C;font-weight:600}
+  .item .st-btn{min-height:54px;font-size:16px}
+  .item .ok{color:#15803D;font-weight:700;font-size:15px}
+  .voltar{background:none;border:0;color:var(--blue);font:600 16px var(--font-ui);min-height:48px;cursor:pointer;padding:0;margin-top:8px}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<main id="tela"><p class="guia">Abrindo...</p></main>
+<input type="file" id="arq" accept="image/*,application/pdf">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+/* Link de documentação do candidato (?k=link). Sem login, sem PIN: o link é
+   pessoal, vale por prazo e só serve para esta admissão.
+   1) dados que só a pessoa sabe  2) família  3) documentos, um por vez  4) concluir. */
+const VERSAO = '2026-10-05 · documentos';
+(async () => {
+  console.log('[Sigma RH] ' + VERSAO);
+  const { token, demo } = SigmaRH.publico({ titulo: 'Documentos de admissão' });
+  const { esc, rpc, frase, fmt, enviarArquivo } = SigmaRH;
+  const tela = document.getElementById('tela');
+  const erro = t => `<div class="recado erro">${esc(t)}</div>`;
+  if (!token) { tela.innerHTML = erro('Este link está incompleto. Peça ao RH para mandar de novo.'); return; }
+
+  let D;   // o que o banco devolve: nome, função, prazo, dados, itens, conjuge, filhos
+  async function carregar() {
+    const { data, error } = await rpc('doc_abrir', { p_link: token });
+    if (error) { tela.innerHTML = erro(frase(error)); return false; }
+    D = data; return true;
+  }
+  if (!(await carregar())) return;
+  if (D.concluido) { tela.innerHTML = concluidoHtml(); return; }
+
+  const primeiro = () => esc(D.nome.split(' ')[0]);
+  function concluidoHtml() {
+    return `<div class="recado ok"><b>Recebemos tudo, ${primeiro()}.</b><br>
+      O RH vai conferir. Se algum documento precisar ser trocado, você recebe aviso por este mesmo link.</div>`;
+  }
+
+  // ── perguntas sobre a pessoa (bloco "Dados do candidato" do FOR-RH-02) ──
+  const P = [
+    { k: 'cpf', tit: 'Qual o seu CPF?', tipo: 'campo', ph: '000.000.000-00', num: true, se: () => !D.tem_cpf },
+    { k: 'calcado', tit: 'Qual o número do seu calçado?', tipo: 'op', ops: ['36','37','38','39','40','41','42','43','44','45','46','47'] },
+    { k: 'uniforme', tit: 'Qual o tamanho do seu uniforme?', tipo: 'op', ops: ['P','M','G','GG','XG','XXG','EG','EGG'] },
+    { k: 'cnh', tit: 'Você tem carteira de motorista (CNH)?', tipo: 'op', ops: ['Sim','Não'] },
+    { k: 'cnh_dados', tit: 'Dados da sua CNH', tipo: 'campos', se: () => R.cnh === 'Sim', campos: [
+        { k: 'cnh_categoria', rot: 'Categoria', ph: 'Ex.: B' }, { k: 'cnh_validade', rot: 'Validade', data: true },
+        { k: 'cnh_primeira', rot: 'Data da 1ª CNH', data: true } ] },
+    { k: 'parente', tit: 'Você tem algum parente que trabalha na GCB?', tipo: 'op', ops: ['Sim','Não'] },
+    { k: 'parente_dados', tit: 'Quem é o seu parente na GCB?', tipo: 'campos', se: () => R.parente === 'Sim', campos: [
+        { k: 'parente_nome', rot: 'Nome' }, { k: 'parente_cargo', rot: 'Cargo' } ] },
+    { k: 'indicado', tit: 'Alguém da GCB indicou você?', tipo: 'op', ops: ['Sim','Não'] },
+    { k: 'indicado_dados', tit: 'Quem indicou você?', tipo: 'campos', se: () => R.indicado === 'Sim', campos: [
+        { k: 'indicado_nome', rot: 'Nome' }, { k: 'indicado_cargo', rot: 'Cargo' } ] },
+    { k: 'conjuge', tit: 'Você é casado(a) ou tem união estável?', tipo: 'op', ops: ['Sim','Não'] },
+    { k: 'filhos', tit: 'Quantos filhos você tem?', tipo: 'op', ops: ['0','1','2','3','4','5 ou mais'] },
+  ];
+  const R = Object.assign({}, D.dados || {});
+  if (D.conjuge != null) R.conjuge = D.conjuge ? 'Sim' : 'Não';
+  if (D.filhos != null && D.dados && Object.keys(D.dados).length) R.filhos = String(D.filhos);
+
+  const ativos = () => P.filter(p => !p.se || p.se());
+  let i = 0;
+  const total = () => ativos().length + 1;   // +1: a tela de documentos
+
+  function cab(n, tit) {
+    return `<div class="passo-n">Parte ${n} de ${total()}</div>
+      <div class="barra"><span style="width:${Math.round(100 * n / total())}%"></span></div><h1>${esc(tit)}</h1>`;
+  }
+
+  function pergunta() {
+    const a = ativos(); const p = a[i];
+    if (!p) { documentos(); return; }
+    let h = cab(i + 1, p.tit) + '<div id="err"></div>';
+    if (p.tipo === 'op') {
+      h += `<div class="opcoes">${p.ops.map(o => `<button type="button" data-v="${esc(o)}" aria-pressed="${R[p.k] === o}">${esc(o)}</button>`).join('')}</div>`;
+    } else {
+      const cs = p.campos || [{ k: p.k, rot: p.tit, ph: p.ph, num: p.num }];
+      h += cs.map(c => `<div class="st-field">${p.campos ? `<label for="c-${c.k}">${esc(c.rot)}</label>` : ''}
+        <input id="c-${c.k}" ${c.data ? 'type="date"' : ''} ${c.num ? 'inputmode="numeric" autocomplete="off"' : ''}
+          placeholder="${esc(c.ph || '')}" value="${esc(R[c.k] || '')}"></div>`).join('')
+        + `<button class="st-btn" id="seguir">Continuar</button>`;
+    }
+    if (i > 0) h += `<button class="voltar" id="voltar">&#8249; Voltar</button>`;
+    tela.innerHTML = h; window.scrollTo(0, 0);
+    const cpf = document.getElementById('c-cpf');
+    if (cpf) cpf.addEventListener('input', () => {
+      const d = cpf.value.replace(/\D/g, '').slice(0, 11);
+      cpf.value = d.replace(/(\d{3})(\d{3})?(\d{3})?(\d{2})?/, (_, a, b, c, e) => [a, b, c].filter(Boolean).join('.') + (e ? '-' + e : ''));
+    });
+  }
+
+  const cpfValido = c => {
+    c = c.replace(/\D/g, ''); if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+    for (const t of [9, 10]) { let s = 0; for (let j = 0; j < t; j++) s += +c[j] * (t + 1 - j);
+      if (((s * 10) % 11) % 10 !== +c[t]) return false; }
+    return true;
+  };
+
+  async function salvarEAvancar() {
+    // grava a cada resposta: se a internet cair, ninguém perde o que já respondeu
+    const dados = Object.assign({}, R);
+    if (R.conjuge) dados.conjuge = R.conjuge === 'Sim';
+    if (R.filhos) dados.filhos = parseInt(R.filhos, 10);
+    const { error } = await rpc('doc_salvar_dados', { p_link: token, p_dados: dados });
+    if (error) { const e = document.getElementById('err'); if (e) e.innerHTML = erro(frase(error)); return; }
+    i++; pergunta();
+  }
+
+  // ── documentos ──
+  // D.envios: { codigo: { situacao, motivo } }. Filho tem um código por filho (NASC#1, NASC#2).
+  function itensDaPessoa() {
+    const filhos = parseInt(R.filhos || '0', 10) || 0;
+    const env = D.envios || {};
+    const com = (it, cod, nome) => Object.assign({}, it, { codigo: cod, nome,
+      situacao: (env[cod] || {}).situacao || 'pendente', motivo: (env[cod] || {}).motivo || null });
+    const out = [];
+    D.itens.forEach(it => {
+      if (it.para === 'titular') out.push(com(it, it.codigo, it.nome));
+      if (it.para === 'conjuge' && R.conjuge === 'Sim') out.push(com(it, it.codigo, it.nome));
+      if (it.para === 'filho') for (let n = 1; n <= filhos; n++) out.push(com(it, it.codigo + '#' + n, it.nome + ` (${n}º filho)`));
+    });
+    return out;
+  }
+
+  let itens = [];
+  function documentos() {
+    itens = itensDaPessoa();
+    const feitos = itens.filter(x => x.situacao === 'enviado' || x.situacao === 'aprovado').length;
+    const faltam = itens.filter(x => x.obrigatorio && !['enviado','aprovado'].includes(x.situacao)).length;
+    tela.innerHTML = cab(total(), 'Agora os documentos') +
+      `<p class="guia">Tire uma foto de cada documento, com boa luz e sem cortar as bordas. Pode ser PDF também.
+       Já enviou <b>${feitos} de ${itens.length}</b>.</p><div id="err"></div>` +
+      itens.map((it, n) => `<div class="item" data-s="${it.situacao}">
+        <b>${esc(it.nome)}</b>
+        <small>${it.situacao === 'recusado' ? `<span class="rec">O RH pediu de novo: ${esc(it.motivo || 'documento ilegível')}</span>` : esc(it.ajuda || '')}</small>
+        ${['enviado','aprovado'].includes(it.situacao) ? '<span class="ok">&#10003; Enviado</span> <button class="voltar" data-n="' + n + '">Trocar</button>'
+          : `<button class="st-btn" data-n="${n}">Tirar foto ou escolher arquivo</button>`}
+      </div>`).join('') +
+      `<button class="st-btn" id="concluir" ${faltam ? 'disabled' : ''}>${faltam ? `Faltam ${faltam} documento(s)` : 'Terminei, enviar para o RH'}</button>
+       <button class="voltar" id="voltar">&#8249; Voltar para as perguntas</button>`;
+    window.scrollTo(0, 0);
+  }
+
+  // reduz foto grande antes de mandar (celular de obra, internet fraca)
+  function reduzir(arquivo) {
+    return new Promise(res => {
+      if (!arquivo.type.startsWith('image/')) { res(arquivo); return; }
+      const img = new Image();
+      img.onload = () => {
+        const m = 1800, k = Math.min(1, m / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => res(b ? new File([b], arquivo.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : arquivo), 'image/jpeg', 0.82);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => res(arquivo);
+      img.src = URL.createObjectURL(arquivo);
+    });
+  }
+
+  let escolhendo = null;
+  document.getElementById('arq').addEventListener('change', async ev => {
+    const f = ev.target.files[0]; ev.target.value = '';
+    if (!f || escolhendo == null) return;
+    const it = itens[escolhendo];
+    if (f.size > 15 * 1024 * 1024) { document.getElementById('err').innerHTML = erro('Arquivo muito grande. Tire uma foto em vez de mandar o arquivo.'); return; }
+    const card = tela.querySelectorAll('.item')[escolhendo];
+    card.querySelector('small').textContent = 'Enviando, espere...';
+    const arq = await reduzir(f);
+    let r;
+    if (demo) r = await rpc('doc_enviar_arquivo', { p_link: token, p_item: it.codigo });
+    else {
+      const fd = new FormData(); fd.append('k', token); fd.append('item', it.codigo); fd.append('arquivo', arq);
+      r = await enviarArquivo('rh-doc-upload', fd);
+    }
+    if (r.error) { card.querySelector('small').innerHTML = `<span class="rec">${esc(frase(r.error))}</span>`; return; }
+    await carregar();
+    documentos();
+  });
+
+  tela.addEventListener('click', async ev => {
+    const o = ev.target.closest('.opcoes [data-v]');
+    if (o) { const p = ativos()[i]; R[p.k] = o.dataset.v; o.setAttribute('aria-pressed', 'true'); setTimeout(salvarEAvancar, 150); return; }
+    if (ev.target.closest('#seguir')) {
+      const p = ativos()[i];
+      const cs = p.campos || [{ k: p.k }];
+      for (const c of cs) {
+        const v = document.getElementById('c-' + c.k).value.trim();
+        if (!v) { document.getElementById('err').innerHTML = erro('Preencha para continuar.'); return; }
+        R[c.k] = v;
+      }
+      if (p.k === 'cpf' && !cpfValido(R.cpf)) { document.getElementById('err').innerHTML = erro('Esse CPF não confere. Confira os números.'); return; }
+      salvarEAvancar(); return;
+    }
+    if (ev.target.closest('#voltar')) { if (tela.querySelector('.item')) { i = ativos().length - 1; } else i = Math.max(0, i - 1); pergunta(); return; }
+    const b = ev.target.closest('[data-n]');
+    if (b) { escolhendo = +b.dataset.n; document.getElementById('arq').click(); return; }
+    if (ev.target.closest('#concluir')) {
+      const { error } = await rpc('doc_concluir', { p_link: token });
+      if (error) { document.getElementById('err').innerHTML = erro(frase(error)); return; }
+      tela.innerHTML = concluidoHtml(); window.scrollTo(0, 0);
+    }
+  });
+
+  // abertura
+  tela.innerHTML = `<h1>Olá, ${primeiro()}</h1>
+    <p class="guia">Este link é para a sua admissão como <b>${esc(D.funcao)}</b>.
+    São algumas perguntas rápidas e depois as fotos dos documentos.
+    Você pode parar e voltar depois pelo mesmo link${D.prazo ? `, até <b>${fmt.data(D.prazo)}</b>` : ''}.</p>
+    <button class="st-btn" id="comecar">Começar</button>`;
+  tela.querySelector('#comecar').onclick = () => {
+    // quem já respondeu tudo antes vai direto para os documentos
+    const a = ativos(); const prox = a.findIndex(p => p.tipo === 'op' ? !R[p.k] : (p.campos || [{ k: p.k }]).some(c => !R[c.k]));
+    i = prox < 0 ? a.length : prox; pergunta();
+  };
+})();
+</script>
+</body>
+</html>

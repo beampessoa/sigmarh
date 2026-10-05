@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Quem pede e aprova</title>
+<style>
+  .linha{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;margin-bottom:8px;box-shadow:var(--sh);flex-wrap:wrap}
+  .linha .quem{flex:1 1 240px;min-width:0}
+  .linha .nome{font-weight:700;color:var(--graphite)}
+  .linha .sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .chave{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border:2px solid var(--line);
+    border-radius:12px;background:#fff;cursor:pointer;font:600 14px var(--font-ui);color:var(--ink-soft)}
+  .chave .bola{width:22px;height:22px;border-radius:6px;border:2px solid #94A3B8;display:flex;align-items:center;justify-content:center}
+  .chave[aria-pressed="true"]{border-color:#15803D;color:#15803D;background:#F0FDF4}
+  .chave[aria-pressed="true"] .bola{background:#15803D;border-color:#15803D}
+  .chave[aria-pressed="true"] .bola::after{content:"";width:10px;height:6px;border:solid #fff;border-width:0 0 3px 3px;transform:rotate(-45deg) translate(1px,-1px)}
+  .busca{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .busca input,.busca select{min-height:46px;border:1.5px solid #D7DEEA;border-radius:10px;padding:0 12px;font-size:15px;background:var(--field)}
+  .busca input{flex:1 1 260px}
+  .vazio{background:#fff;border:1px dashed #CBD5E1;border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body data-pagina="acessos">
+<div id="app">
+  <div class="content">
+    <div class="st-page-head">
+      <h1>Quem pede e quem aprova contratação</h1>
+      <p>Marque quem pode <b>pedir</b> contratação (supervisor, coordenador) e quem pode <b>aprovar</b> (gerente).
+         A pessoa usa o próprio link do treinamento e o PIN. Tirar a marca corta o acesso na hora; o que ela já
+         pediu ou aprovou continua no histórico.</p>
+    </div>
+    <div class="busca">
+      <input type="search" id="q" placeholder="Buscar por nome ou função" autocomplete="off">
+      <select id="f"><option value="">Todos</option><option value="pedir">Só quem pede</option><option value="aprovar">Só quem aprova</option></select>
+    </div>
+    <div id="lista"><div class="vazio">Carregando...</div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+(async () => {
+  const quem = await SigmaRH.init();
+  if (!quem) return;
+  SigmaRH.versaoPagina('2026-10-05 · quem pede e aprova');
+  const { esc, rpc, toast, frase } = SigmaRH;
+  const $ = id => document.getElementById(id);
+  let gente = [];
+
+  function pintar() {
+    const q = $('q').value.trim().toLowerCase(), f = $('f').value;
+    const l = gente.filter(p => (!q || (p.nome + ' ' + p.funcao).toLowerCase().includes(q))
+      && (!f || (f === 'pedir' ? p.pode_pedir : p.pode_aprovar)));
+    $('lista').innerHTML = l.length ? l.map(p => `
+      <div class="linha">
+        <div class="quem"><div class="nome">${esc(p.nome)}</div><div class="sub">${esc(p.funcao || '')}</div></div>
+        <button type="button" class="chave" data-c="${esc(p.codigo)}" data-p="pedir" aria-pressed="${!!p.pode_pedir}"><span class="bola"></span>Pode pedir</button>
+        <button type="button" class="chave" data-c="${esc(p.codigo)}" data-p="aprovar" aria-pressed="${!!p.pode_aprovar}"><span class="bola"></span>Pode aprovar</button>
+      </div>`).join('') : '<div class="vazio">Ninguém com esse filtro.</div>';
+  }
+
+  $('lista').addEventListener('click', async ev => {
+    const b = ev.target.closest('.chave'); if (!b) return;
+    const p = gente.find(x => x.codigo === b.dataset.c);
+    const ativo = b.getAttribute('aria-pressed') !== 'true';
+    b.disabled = true;
+    const { error } = await rpc('rh_acesso_definir', { p_codigo: p.codigo, p_papel: b.dataset.p, p_ativo: ativo });
+    b.disabled = false;
+    if (error) { toast(frase(error), 'erro'); return; }
+    p[b.dataset.p === 'aprovar' ? 'pode_aprovar' : 'pode_pedir'] = ativo;
+    toast(`${p.nome}: ${ativo ? 'agora pode' : 'não pode mais'} ${b.dataset.p === 'aprovar' ? 'aprovar' : 'pedir'} contratação.`, 'ok');
+    pintar();
+  });
+  $('q').addEventListener('input', pintar);
+  $('f').addEventListener('change', pintar);
+
+  const { data, error } = await rpc('rh_acessos');
+  if (error) { $('lista').innerHTML = `<div class="vazio">${esc(frase(error))}</div>`; return; }
+  gente = data || []; pintar();
+})();
+</script>
+</body>
+</html>
