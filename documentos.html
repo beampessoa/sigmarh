@@ -28,7 +28,7 @@
 /* Link de documentação do candidato (?k=link). Sem login, sem PIN: o link é
    pessoal, vale por prazo e só serve para esta admissão.
    1) dados que só a pessoa sabe  2) família  3) documentos, um por vez  4) concluir. */
-const VERSAO = '2026-10-05 · documentos';
+const VERSAO = '2026-10-05 · documentos · mt26';
 (async () => {
   console.log('[Sigma RH] ' + VERSAO);
   const { token, demo } = SigmaRH.publico({ titulo: 'Documentos de admissão' });
@@ -131,7 +131,8 @@ const VERSAO = '2026-10-05 · documentos';
       situacao: (env[cod] || {}).situacao || 'pendente', motivo: (env[cod] || {}).motivo || null });
     const out = [];
     D.itens.forEach(it => {
-      if (it.para === 'titular') out.push(com(it, it.codigo, it.nome));
+      // condicao 'cnh': só pede se a pessoa disse que tem CNH (a mesma regra do banco)
+      if (it.para === 'titular' && (!it.condicao || (it.condicao === 'cnh' && R.cnh === 'Sim'))) out.push(com(it, it.codigo, it.nome));
       if (it.para === 'conjuge' && R.conjuge === 'Sim') out.push(com(it, it.codigo, it.nome));
       if (it.para === 'filho') for (let n = 1; n <= filhos; n++) out.push(com(it, it.codigo + '#' + n, it.nome + ` (${n}º filho)`));
     });
@@ -149,7 +150,8 @@ const VERSAO = '2026-10-05 · documentos';
       itens.map((it, n) => `<div class="item" data-s="${it.situacao}">
         <b>${esc(it.nome)}</b>
         <small>${it.situacao === 'recusado' ? `<span class="rec">O RH pediu de novo: ${esc(it.motivo || 'documento ilegível')}</span>` : esc(it.ajuda || '')}</small>
-        ${['enviado','aprovado'].includes(it.situacao) ? '<span class="ok">&#10003; Enviado</span> <button class="voltar" data-n="' + n + '">Trocar</button>'
+        ${it.situacao === 'aprovado' ? '<span class="ok">&#10003; Aprovado pelo RH</span>'
+          : it.situacao === 'enviado' ? '<span class="ok">&#10003; Enviado</span> <button class="voltar" data-n="' + n + '">Trocar</button>'
           : `<button class="st-btn" data-n="${n}">Tirar foto ou escolher arquivo</button>`}
       </div>`).join('') +
       `<button class="st-btn" id="concluir" ${faltam ? 'disabled' : ''}>${faltam ? `Faltam ${faltam} documento(s)` : 'Terminei, enviar para o RH'}</button>
@@ -174,12 +176,12 @@ const VERSAO = '2026-10-05 · documentos';
     });
   }
 
-  let escolhendo = null;
+  let escolhendo = null, andando = false;
   document.getElementById('arq').addEventListener('change', async ev => {
     const f = ev.target.files[0]; ev.target.value = '';
     if (!f || escolhendo == null) return;
     const it = itens[escolhendo];
-    if (f.size > 15 * 1024 * 1024) { document.getElementById('err').innerHTML = erro('Arquivo muito grande. Tire uma foto em vez de mandar o arquivo.'); return; }
+    if (f.size > 10 * 1024 * 1024) { document.getElementById('err').innerHTML = erro('Arquivo muito grande. Tire uma foto em vez de mandar o arquivo.'); return; }
     const card = tela.querySelectorAll('.item')[escolhendo];
     card.querySelector('small').textContent = 'Enviando, espere...';
     const arq = await reduzir(f);
@@ -196,7 +198,9 @@ const VERSAO = '2026-10-05 · documentos';
 
   tela.addEventListener('click', async ev => {
     const o = ev.target.closest('.opcoes [data-v]');
-    if (o) { const p = ativos()[i]; R[p.k] = o.dataset.v; o.setAttribute('aria-pressed', 'true'); setTimeout(salvarEAvancar, 150); return; }
+    // toque duplo (luva) não pode responder duas perguntas de uma vez
+    if (o) { if (andando) return; andando = true; const p = ativos()[i]; R[p.k] = o.dataset.v; o.setAttribute('aria-pressed', 'true');
+      setTimeout(async () => { try { await salvarEAvancar(); } finally { andando = false; } }, 150); return; }
     if (ev.target.closest('#seguir')) {
       const p = ativos()[i];
       const cs = p.campos || [{ k: p.k }];
@@ -206,7 +210,8 @@ const VERSAO = '2026-10-05 · documentos';
         R[c.k] = v;
       }
       if (p.k === 'cpf' && !cpfValido(R.cpf)) { document.getElementById('err').innerHTML = erro('Esse CPF não confere. Confira os números.'); return; }
-      salvarEAvancar(); return;
+      if (andando) return; andando = true;
+      try { await salvarEAvancar(); } finally { andando = false; } return;
     }
     if (ev.target.closest('#voltar')) { if (tela.querySelector('.item')) { i = ativos().length - 1; } else i = Math.max(0, i - 1); pergunta(); return; }
     const b = ev.target.closest('[data-n]');

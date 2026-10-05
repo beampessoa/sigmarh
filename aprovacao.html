@@ -30,7 +30,7 @@
 /* Aprovação das requisições pelo gerente. Link pessoal (?k=token) e PIN.
    Primeiro a contagem por supervisor; tocando num nome, as requisições dele,
    uma por vez, com Aprovar ou Recusar. */
-const VERSAO = '2026-10-05 · aprovação';
+const VERSAO = '2026-10-05 · aprovação · mt26';
 (async () => {
   console.log('[Sigma RH] ' + VERSAO);
   const { token } = SigmaRH.publico({ titulo: 'Aprovar contratações' });
@@ -94,8 +94,12 @@ const VERSAO = '2026-10-05 · aprovação';
   async function enviar(aprovar, motivo) {
     const pin = await pedirPin({ titulo: aprovar ? 'Aprovar este pedido' : 'Recusar este pedido', texto: 'Digite seu PIN de 4 números.' });
     if (!pin) return;
-    const { error } = await rpc('ger_decidir', { p_token: token, p_pin: pin, p_numero: fila[pos].numero, p_aprovar: aprovar, p_motivo: motivo });
-    if (error) { tela.querySelector('#err').insertAdjacentHTML('afterbegin', erro(frase(error))); return; }
+    const { data, error } = await rpc('ger_decidir', { p_token: token, p_pin: pin, p_numero: fila[pos].numero, p_aprovar: aprovar, p_motivo: motivo });
+    // PIN recusado volta como { ok:false, mensagem }
+    if (error || data?.ok === false) {
+      const caixa = tela.querySelector('#err');
+      caixa.querySelector('.recado.erro')?.remove();
+      caixa.insertAdjacentHTML('afterbegin', erro(error ? frase(error) : data.mensagem)); return; }
     pos++;
     if (pos < fila.length) {
       tela.innerHTML = `<div class="recado ok">${aprovar ? 'Aprovado.' : 'Recusado.'} Indo para o próximo.</div>`;

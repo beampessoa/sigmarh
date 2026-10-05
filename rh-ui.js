@@ -20,7 +20,7 @@
  * escrita é por RPC. Nenhuma página faz .from(...).
  * ========================================================================== */
 const SigmaRH = (() => {
-  const VERSAO = '2026-10-05 · fase 1';
+  const VERSAO = '2026-10-05 · mt26';
 
   const URL_SB = 'https://kiwiykgzogcxiseynzyy.supabase.co';
   // Chave anon, pública por desenho (a mesma das telas do treinamento).
@@ -45,7 +45,7 @@ const SigmaRH = (() => {
     { grupo: 'Cadastros' },
     { id: 'acessos', label: 'Quem pede e aprova',   href: 'acessos.html',
       icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4' },
-    { id: 'documentos', label: 'Lista de documentos', em_breve: 'aguarda lista',
+    { id: 'documentos', label: 'Lista de documentos', href: 'lista-documentos.html',
       icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6' },
     { id: 'importar', label: 'Importar efetivo atual', em_breve: 'depois',
       icon: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3' },
@@ -82,6 +82,28 @@ const SigmaRH = (() => {
       return { data: j, error: null };
     } catch (e) { return { data: null, error: { message: 'Sem conexão. Confira a internet e tente de novo.' } }; }
   }
+  // RH abre um documento do candidato: a Edge Function confere o papel pelo JWT
+  // da sessão. A aba abre antes do fetch para o navegador não bloquear o popup.
+  async function abrirArquivo(nomeFuncao, id) {
+    const aba = window.open('', '_blank');
+    try {
+      const { data: { session } } = await conectar().auth.getSession();
+      if (!session) throw new Error('Sua sessão terminou. Entre de novo.');
+      const r = await fetch(`${URL_SB}/functions/v1/${nomeFuncao}?id=${encodeURIComponent(id)}`, {
+        headers: { apikey: KEY_SB, Authorization: 'Bearer ' + session.access_token } });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.erro || 'Não foi possível abrir o documento.'); }
+      const url = URL.createObjectURL(await r.blob());
+      if (aba) aba.location.href = url; else location.assign(url);
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
+      return { error: null };
+    } catch (e) {
+      if (aba) aba.close();
+      return { error: { message: e.message || 'Sem conexão. Confira a internet e tente de novo.' } };
+    }
+  }
+  // [CONFIRMAR] porta de entrada do treinamento (t.html troca o token por sessão).
+  const URL_TREINAMENTO = 'https://treinamentos.sigmacode.com/t/';
+  const linkTreinamento = tok => tok ? URL_TREINAMENTO + encodeURIComponent(tok) : '';
   const comDemo = href => DEMO ? href + (href.includes('?') ? '&' : '?') + 'demo=1' : href;
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -441,7 +463,7 @@ body.rh-pub{background:#F1F4F9;font-size:17px}
   }
 
   return { VERSAO, BRAND, init, conectar, sessao, sair, papelDaSessao, PAPEIS, DEMO,
-           esc, fmt, frase, toast, confirmar, versaoPagina, rpc, comDemo, publico, pedirPin, enviarArquivo,
+           esc, fmt, frase, toast, confirmar, versaoPagina, rpc, comDemo, publico, pedirPin, enviarArquivo, abrirArquivo, linkTreinamento,
            get db() { return conectar(); } };
 })();
 

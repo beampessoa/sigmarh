@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Lista de documentos</title>
+<style>
+  .grupo-doc{font:700 12px var(--font-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+  .linha{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;margin-bottom:8px;box-shadow:var(--sh);flex-wrap:wrap}
+  .linha[data-ativo="false"]{opacity:.6;box-shadow:none}
+  .linha .quem{flex:1 1 260px;min-width:0}
+  .linha .nome{font-weight:700;color:var(--graphite)}
+  .linha .sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .linha .tarjas{display:flex;gap:6px;flex-wrap:wrap}
+  .topo-acoes{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .vazio{background:#fff;border:1px dashed #CBD5E1;border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
+  .erro{display:none;background:#FEF2F2;color:#B91C1C;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+  .erro.show{display:block}
+  .dois{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .marca{display:flex;align-items:center;gap:10px;min-height:48px;font-size:15px;cursor:pointer}
+  .marca input{width:22px;height:22px}
+  @media (max-width:560px){.dois{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-pagina="documentos">
+<div id="app">
+  <div class="content">
+    <div class="st-page-head">
+      <h1>Lista de documentos de admissão</h1>
+      <p>É esta lista que o candidato vê no link de documentos. Documento do cônjuge só aparece para quem é casado
+         ou tem união estável; documento de filho aparece uma vez por filho. Desligar um documento tira ele dos
+         próximos links; o que já foi enviado fica guardado.</p>
+    </div>
+    <div class="topo-acoes"><button type="button" class="st-btn" id="novo">Novo documento</button></div>
+    <div id="lista"><div class="vazio">Carregando...</div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+(async () => {
+  const quem = await SigmaRH.init();
+  if (!quem) return;
+  SigmaRH.versaoPagina('2026-10-05 · lista de documentos');
+  const { esc, rpc, toast, frase } = SigmaRH;
+  const $ = id => document.getElementById(id);
+  const PARA = { titular: 'Da pessoa', conjuge: 'Do cônjuge', filho: 'De cada filho' };
+  let tipos = [];
+
+  function pintar() {
+    if (!tipos.length) {
+      $('lista').innerHTML = '<div class="vazio">Nenhum documento cadastrado ainda. Enquanto a lista estiver vazia, o candidato não consegue terminar o envio.</div>';
+      return;
+    }
+    $('lista').innerHTML = Object.keys(PARA).map(p => {
+      const l = tipos.filter(t => t.para === p);
+      if (!l.length) return '';
+      return `<div class="grupo-doc">${PARA[p]}</div>` + l.map(t => `
+        <div class="linha" data-ativo="${!!t.ativo}">
+          <div class="quem"><div class="nome">${esc(t.nome)}</div>
+            <div class="sub">${esc(t.ajuda || 'Sem orientação para a pessoa')}</div></div>
+          <div class="tarjas">
+            ${t.ativo ? '' : '<span class="st-tarja" data-s="neutro">Desligado</span>'}
+            <span class="st-tarja" data-s="${t.obrigatorio ? 'aviso' : 'neutro'}">${t.obrigatorio ? 'Obrigatório' : 'Se tiver'}</span>
+            ${t.condicao === 'cnh' ? '<span class="st-tarja" data-s="neutro">Só quem tem CNH</span>' : ''}
+            ${t.sensivel ? '<span class="st-tarja" data-s="nao">Sensível</span>' : ''}
+          </div>
+          <button type="button" class="st-btn" data-tom="quieto" data-c="${esc(t.codigo)}">Mudar</button>
+        </div>`).join('');
+    }).join('');
+  }
+
+  function editar(t) {
+    const novo = !t; t = t || { codigo: '', nome: '', para: 'titular', condicao: null, obrigatorio: true,
+      ajuda: '', regra_rh: '', sensivel: false, ordem: 100, ativo: true };
+    const d = document.createElement('dialog'); d.className = 'st-modal';
+    d.innerHTML = `<div class="st-modal-in">
+      <h2>${novo ? 'Novo documento' : esc(t.nome)}</h2>
+      <div class="erro"></div>
+      <div class="st-field"><label for="e-nome">Nome que a pessoa vê</label>
+        <input id="e-nome" maxlength="80" value="${esc(t.nome)}" placeholder="Ex.: RG (frente e verso)"></div>
+      <div class="dois">
+        <div class="st-field"><label for="e-cod">Código curto</label>
+          <input id="e-cod" maxlength="20" value="${esc(t.codigo)}" ${novo ? '' : 'readonly'} placeholder="Ex.: RG"
+            style="text-transform:uppercase"></div>
+        <div class="st-field"><label for="e-para">De quem</label>
+          <select id="e-para">${Object.entries(PARA).map(([k, v]) => `<option value="${k}" ${t.para === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      </div>
+      <div class="st-field"><label for="e-ajuda">Orientação para a pessoa</label>
+        <input id="e-ajuda" maxlength="200" value="${esc(t.ajuda || '')}" placeholder="Ex.: foto nítida, sem reflexo"></div>
+      <div class="st-field"><label for="e-regra">O que o RH confere (a pessoa não vê)</label>
+        <input id="e-regra" maxlength="200" value="${esc(t.regra_rh || '')}" placeholder="Ex.: validade maior que 30 dias"></div>
+      <label class="marca"><input type="checkbox" id="e-obrig" ${t.obrigatorio ? 'checked' : ''}> Obrigatório (sem ele a pessoa não termina)</label>
+      <label class="marca"><input type="checkbox" id="e-cnh" ${t.condicao === 'cnh' ? 'checked' : ''}> Só para quem disse que tem CNH</label>
+      <label class="marca"><input type="checkbox" id="e-sens" ${t.sensivel ? 'checked' : ''}> Documento sensível (saúde, por exemplo)</label>
+      <label class="marca"><input type="checkbox" id="e-ativo" ${t.ativo ? 'checked' : ''}> Ligado (aparece nos próximos links)</label>
+      <div class="st-field" style="margin-top:8px"><label for="e-ordem">Posição na lista (menor aparece antes)</label>
+        <input id="e-ordem" type="number" min="0" max="999" value="${esc(t.ordem)}"></div>
+      <div class="st-modal-acts">
+        <button class="st-btn" data-tom="quieto" id="e-cancelar">Cancelar</button>
+        <button class="st-btn" id="e-salvar">Salvar</button>
+      </div></div>`;
+    document.body.appendChild(d);
+    d.addEventListener('close', () => d.remove());
+    d.querySelector('#e-cancelar').onclick = () => d.close();
+    d.querySelector('#e-salvar').onclick = async ev => {
+      const v = id => d.querySelector(id);
+      const dados = { codigo: v('#e-cod').value.trim().toUpperCase(), nome: v('#e-nome').value.trim(),
+        para: v('#e-para').value, condicao: v('#e-cnh').checked ? 'cnh' : '', obrigatorio: v('#e-obrig').checked,
+        ajuda: v('#e-ajuda').value.trim(), regra_rh: v('#e-regra').value.trim(), sensivel: v('#e-sens').checked,
+        ativo: v('#e-ativo').checked, ordem: parseInt(v('#e-ordem').value, 10) || 100 };
+      if (dados.condicao && dados.para !== 'titular') {
+        const e = d.querySelector('.erro'); e.textContent = 'A condição de CNH só vale para documento da própria pessoa.'; e.classList.add('show'); return;
+      }
+      ev.target.disabled = true;
+      const { error } = await rpc('rh_doc_tipo_salvar', { p_dados: dados });
+      ev.target.disabled = false;
+      if (error) { const e = d.querySelector('.erro'); e.textContent = frase(error); e.classList.add('show'); return; }
+      d.close(); toast(`${dados.nome}: salvo.`, 'ok'); carregar();
+    };
+    d.showModal();
+    d.querySelector(novo ? '#e-nome' : '#e-ajuda').focus();
+  }
+
+  $('novo').onclick = () => editar(null);
+  $('lista').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-c]'); if (b) editar(tipos.find(t => t.codigo === b.dataset.c));
+  });
+
+  async function carregar() {
+    const { data, error } = await rpc('rh_doc_tipos_listar');
+    if (error) { $('lista').innerHTML = `<div class="vazio">${esc(frase(error))}</div>`; return; }
+    tipos = data || []; pintar();
+  }
+  carregar();
+})();
+</script>
+</body>
+</html>

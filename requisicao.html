@@ -26,7 +26,7 @@
 /* Requisição de pessoal (FOR-RH-02) feita pelo supervisor ou coordenador.
    Entra pelo link pessoal do treinamento (?k=token) e assina com o PIN.
    Uma pergunta por tela. Tocar numa opção já avança. */
-const VERSAO = '2026-10-05 · requisição';
+const VERSAO = '2026-10-05 · requisição · mt26';
 (async () => {
   console.log('[Sigma RH] ' + VERSAO);
   const { token } = SigmaRH.publico({ titulo: 'Pedir contratação' });
@@ -132,13 +132,16 @@ const VERSAO = '2026-10-05 · requisição';
       : '<p class="guia">Ninguém com esse nome no contrato.</p>';
   }
 
+  let andando = false;
   tela.addEventListener('click', async ev => {
     const p = PASSOS[i];
     if (ev.target.closest('#voltar')) { voltar(); return; }
     const o = ev.target.closest('.opcoes [data-v]');
-    if (o) { R[p.k] = o.dataset.v; pintar(); setTimeout(avancar, 180); return; }
+    // toque duplo (luva) não pode responder duas perguntas de uma vez
+    if ((o || ev.target.closest('[data-sub]')) && andando) return;
+    if (o) { andando = true; R[p.k] = o.dataset.v; pintar(); setTimeout(() => { andando = false; avancar(); }, 180); return; }
     const s = ev.target.closest('[data-sub]');
-    if (s) { R.substituido_codigo = s.dataset.sub; setTimeout(avancar, 120); return; }
+    if (s) { andando = true; R.substituido_codigo = s.dataset.sub; setTimeout(() => { andando = false; avancar(); }, 120); return; }
     if (ev.target.closest('#seguir')) {
       for (const c of p.campos) {
         let v = document.getElementById('c-' + c.k).value.trim();
@@ -156,8 +159,9 @@ const VERSAO = '2026-10-05 · requisição';
       if (!pin) return;
       const btn = document.getElementById('assinar'); btn.disabled = true; btn.textContent = 'Enviando...';
       const { data, error } = await rpc('req_criar', { p_token: token, p_pin: pin, p_dados: R });
-      if (error) { btn.disabled = false; btn.textContent = 'Assinar com meu PIN';
-        document.getElementById('err').innerHTML = erro(frase(error)); return; }
+      // PIN recusado volta como { ok:false, mensagem } (não é exceção: o contador de tentativas fica gravado)
+      if (error || data?.ok === false) { btn.disabled = false; btn.textContent = 'Assinar com meu PIN';
+        document.getElementById('err').innerHTML = erro(error ? frase(error) : data.mensagem); return; }
       tela.innerHTML = `<div class="recado ok"><b>Pedido ${esc(data.numero)} enviado.</b><br>
         Agora é com o gerente. Você acompanha em "Meus pedidos".</div>
         <button class="st-btn" id="novo">Fazer outro pedido</button>
