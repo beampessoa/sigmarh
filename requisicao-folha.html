@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Requisição de pessoal</title>
+<style>
+  /* ── tela ── */
+  .barra-folha{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .barra-folha .dica{font-size:13.5px;color:var(--muted);flex:1 1 260px}
+  .palco{overflow:auto;padding:12px 0 40px}
+  .vazio{background:#fff;border:1px dashed #CBD5E1;border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
+
+  /* ── a folha: A4 retrato, margens 10 mm nos quatro lados (modelo FOR-RH-02 usa 10 mm) ── */
+  #folha{width:210mm;min-height:297mm;box-sizing:border-box;padding:10mm;margin:0 auto;background:#fff;
+    color:#000;font:8.6pt/1.25 Arial,Helvetica,sans-serif;box-shadow:0 4px 24px rgba(15,23,42,.18)}
+  #folha *{box-sizing:border-box}
+  .f{width:100%;border-collapse:collapse;table-layout:fixed}
+  .f td{border:.6pt solid #000;padding:1.2mm 1.6mm;vertical-align:middle;overflow-wrap:anywhere}
+  .f + .f{margin-top:-.6pt}
+  .sec td{background:#E7E9EE;font-weight:700;text-align:center;font-size:8.4pt;padding:1mm}
+  .rot{font-weight:700}
+  .val{font-weight:400;color:#0B2A6B}
+  .caneta{display:inline-block;min-width:22mm;border-bottom:.5pt solid #000;height:3.6mm;vertical-align:bottom}
+  .ck{display:inline-flex;align-items:center;gap:1.4mm;margin-right:4.5mm;white-space:nowrap;vertical-align:middle;line-height:1}
+  .ck i{display:inline-block;width:3.6mm;height:3.6mm;border:.6pt solid #000;position:relative;flex:none}
+  .ck i.x::after{content:"";position:absolute;inset:.5mm;background:#000}
+  .cab td{text-align:center}
+  .cab .logo{height:16mm}
+  .cab .logo img{max-height:13mm;max-width:40mm;object-fit:contain}
+  .cab .logo span{font:800 18pt Arial;color:#0B6B3A;letter-spacing:.06em}
+  .cab .titulo{font-size:13pt;font-weight:700}
+  .cab .cod{text-align:left;font-size:8.2pt;line-height:1.5}
+  .ctl td{text-align:center;font-size:7.8pt}
+  .ctl .h td{font-weight:700;background:#F3F4F6}
+  .texto{min-height:9mm;white-space:pre-wrap}
+  .ajusta{font-size:inherit}
+  .ass td{height:30mm;vertical-align:bottom;text-align:center;font-size:7.8pt}
+  .ass .pin{display:block;font-size:7.4pt;color:#0B2A6B;margin-bottom:1.5mm;line-height:1.35}
+  .ass .linha{border-top:.6pt solid #000;padding-top:1mm;font-weight:700;margin:0 3mm}
+  .ass .data{display:block;text-align:left;margin:1.5mm 3mm 0;font-weight:400}
+  #folha.compacta .f td{padding:.7mm 1.4mm}
+  #folha.compacta .ass td{height:24mm}
+  #folha.compacta .texto{min-height:6mm}
+  .rodape{display:flex;justify-content:space-between;margin-top:2mm;font-size:7.4pt;color:#333}
+
+  @page{size:A4 portrait;margin:0}
+  @media print{
+    html,body{background:#fff !important}
+    body *{visibility:hidden !important}
+    #folha,#folha *{visibility:visible !important}
+    #folha{position:absolute;left:0;top:0;box-shadow:none;margin:0}
+  }
+</style>
+</head>
+<body data-pagina="painel">
+<div id="app">
+  <div class="content">
+    <div class="st-page-head">
+      <h1>Requisição de pessoal (FOR-RH-02)</h1>
+      <p>A folha sai como no modelo da GCB. Supervisor e gerente já assinaram com o PIN; a diretoria assina no papel.
+         O salário e o bloco "Para uso da área de recursos humanos" saem em branco para o DP preencher.</p>
+    </div>
+    <div class="barra-folha">
+      <button type="button" class="st-btn" id="baixar" disabled>Baixar PDF</button>
+      <a class="st-btn" data-tom="quieto" href="shell.html" id="voltar">Voltar para a Gestão do RH</a>
+      <span class="dica">Na janela que abrir, escolha <b>Salvar como PDF</b> e deixe as margens em <b>Nenhuma</b>.</span>
+    </div>
+    <div class="palco" id="palco"><div class="vazio">Carregando...</div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script>
+/* FOR-RH-02 a partir do banco (rh_requisicao_folha). Uma folha A4 retrato,
+   PDF vetorial pelo window.print(): texto pesquisável e nenhum script de fora.
+   Regras: valor vazio que é para caneta sai em branco com linha; salário sempre
+   em branco (D24); diretoria sempre em branco (D23). */
+const VERSAO_PAGINA = '2026-10-05 · requisição FOR-RH-02';
+
+// Controle do formulário, como está no modelo rev. 3 (aba "Máscara Documento").
+// Mudou a revisão do FOR-RH-02: troca só aqui.
+const FORM = {
+  codigo: 'FOR-RH-02', titulo: 'Requisição de pessoal',
+  autoria: 'Anderson Figueiredo', colaboracao: 'João Waçosnik', aprovacao: 'Carlos Roberto',
+  revisao: '3', emissao: '14/04/2023', alteracoes: 'Inclusão dos itens 4.5 e 4.6.',
+  logo: 'gcb.png'
+};
+
+(async () => {
+  const quem = await SigmaRH.init();
+  if (!quem) return;
+  SigmaRH.versaoPagina(VERSAO_PAGINA);
+  const { esc, rpc, frase, comDemo } = SigmaRH;
+  const $ = id => document.getElementById(id);
+  $('voltar').href = comDemo('shell.html');
+
+  const numero = new URLSearchParams(location.search).get('n') || '';
+  if (!numero) { $('palco').innerHTML = '<div class="vazio">Abra a requisição pela Gestão do RH.</div>'; return; }
+  const { data: R, error } = await rpc('rh_requisicao_folha', { p_numero: numero });
+  if (error) { $('palco').innerHTML = `<div class="vazio">${esc(frase(error))}</div>`; return; }
+
+  const V = R.vaga || {}, C = R.candidato || {}, A = R.assinaturas || {}, S = V.substituido || null;
+  const val = v => (v == null || v === '') ? '<span class="caneta"></span>' : `<span class="val">${esc(v)}</span>`;
+  const ck = (rot, marcado) => `<span class="ck"><i class="${marcado ? 'x' : ''}"></i>${esc(rot)}</span>`;
+  const simNao = v => ck('Sim', v === 'Sim') + ck('Não', v === 'Não');
+  const dataBR = d => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '';
+  const exp = (V.contrato || '').match(/Experiência (\d+)/);
+
+  const assinatura = (rot, a) => `<td>${a ? `<span class="pin">${esc(a.nome)}<br>${esc(a.funcao || '')}<br>
+      Assinado com PIN no Sigma RH em ${esc(a.em)}<br>Código ${esc(a.codigo)}</span>` : ''}
+      <div class="linha">${esc(rot)}</div><span class="data">Data: ${a ? esc(a.em.slice(0, 10)) : ''}</span></td>`;
+
+  const logo = `<img src="${SigmaRH.BRAND.bucket + FORM.logo}" alt="GCB"
+      onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'GCB'}))">`;
+
+  $('palco').innerHTML = `<div id="folha">
+  <table class="f cab"><colgroup><col style="width:24%"><col><col style="width:22%"></colgroup><tr>
+    <td class="logo">${logo}</td><td class="titulo">${esc(FORM.titulo)}</td>
+    <td class="cod"><b>Código:</b> ${esc(FORM.codigo)}<br><b>Nº:</b> ${esc(R.numero)}<br><b>Folha</b> 1 de 1</td></tr></table>
+  <table class="f ctl"><tr class="h"><td>Autoria</td><td>Colaboração</td><td>Aprovação</td></tr>
+    <tr><td>${esc(FORM.autoria)}</td><td>${esc(FORM.colaboracao)}</td><td>${esc(FORM.aprovacao)}</td></tr></table>
+  <table class="f ctl"><colgroup><col style="width:14%"><col style="width:20%"><col></colgroup>
+    <tr class="h"><td>Revisão</td><td>Data de Emissão</td><td>Alterações em relação à última revisão</td></tr>
+    <tr><td>${esc(FORM.revisao)}</td><td>${esc(FORM.emissao)}</td><td style="text-align:left">${esc(FORM.alteracoes)}</td></tr></table>
+
+  <table class="f" style="margin-top:2mm"><tr><td>
+    ${['Estágio', 'Temporário', 'Efetivo', 'Aprendiz'].map(t => ck(t, V.tipo === t)).join('')}</td></tr></table>
+  <table class="f"><colgroup><col style="width:40%"><col style="width:30%"><col></colgroup><tr>
+    <td><span class="rot">Cargo:</span> ${val(R.cargo)}</td><td><span class="rot">Obra / Local:</span> ${val(V.local)}</td>
+    <td><span class="rot">Área:</span> ${val(V.area)}</td></tr></table>
+  <table class="f"><tr><td><span class="rot">Tipo de contrato (se efetivo):</span><br>
+    ${ck('Determinado', V.contrato === 'Determinado')} ${ck('Experiência', !!exp)}
+    ${['30', '60', '90'].map(n => ck(n, exp && exp[1] === n)).join('')}
+    ${ck('Outros', V.contrato === 'Outro')} <span class="rot">especificar:</span> ${V.contrato === 'Outro' ? val(V.contrato_detalhe) : val('')}
+    &nbsp; <span class="rot">C/ vencimento em</span> ${val('')}</td></tr></table>
+  <table class="f"><colgroup><col style="width:60%"><col></colgroup><tr>
+    <td><span class="rot">Jornada de trabalho</span><br>${['1º turno', '2º turno', '3º turno', 'Administrativo'].map(j => ck(j, V.jornada === j)).join('')}</td>
+    <td><span class="rot">Recrutamento</span><br>${ck('Interno', V.recrutamento === 'Interno')}${ck('Externo', V.recrutamento === 'Externo')}</td></tr></table>
+  <table class="f"><tr><td>${ck('Aumento de quadro', V.motivo === 'Aumento de quadro')}${ck('Substituição', V.motivo === 'Substituição')}</td></tr></table>
+
+  <table class="f"><colgroup><col style="width:40%"><col style="width:32%"><col></colgroup>
+    <tr><td colspan="3" class="rot">Em caso de substituição, incluir os dados do substituído:</td></tr>
+    <tr><td><span class="rot">Nome:</span> ${S ? val(S.nome) : val('')}</td><td><span class="rot">Cargo:</span> ${S ? val(S.funcao) : val('')}</td>
+      <td><span class="rot">Obra/Local:</span> ${val('')}</td></tr>
+    <tr><td><span class="rot">Área:</span> ${val('')}</td><td><span class="rot">Data desligamento:</span> ${S ? val(dataBR(S.saida)) : val('')}</td>
+      <td><span class="rot">Salário:</span> ${val('')}</td></tr></table>
+
+  <table class="f"><tr class="sec"><td>Dados da vaga</td></tr><tr><td><span class="rot">Formação acadêmica</span><br>
+    ${[['Ens. Fundamental', 'Fundamental'], ['Ens. Médio', 'Médio'], ['Técnico', 'Técnico'], ['Graduação', 'Graduação'],
+       ['Pós graduação', 'Pós-graduação'], ['Outros', 'Outra']].map(([r, v]) => ck(r, V.formacao === v)).join('')}<br>
+    <span class="rot">Curso:</span> ${val('')} &nbsp; <span class="rot">Completo:</span> ${val('')}
+    &nbsp; <span class="rot">Ano:</span> ${val('')} &nbsp; <span class="rot">Semestre:</span> ${val('')}</td></tr></table>
+
+  <table class="f"><tr class="sec"><td>Principais atividades</td></tr>
+    <tr><td><span class="rot">Atuar na área de (setor responsável):</span> ${val(V.area)}</td></tr>
+    <tr><td><span class="rot">Função:</span> ${val(R.cargo)}</td></tr>
+    <tr><td><span class="rot">Função específica:</span> ${val(V.funcao_especifica)}</td></tr>
+    <tr><td><span class="rot">Número do requerimento:</span> ${val(R.numero)}</td></tr>
+    <tr><td class="texto ajusta"><span class="rot">Atividades:</span> ${val(V.atividades)}</td></tr></table>
+  <table class="f"><tr class="sec"><td>Experiência / qualificações</td></tr>
+    <tr><td class="texto ajusta">${val(V.experiencia || 'Conforme currículo anexo.')}</td></tr></table>
+
+  <table class="f"><colgroup><col style="width:40%"><col style="width:32%"><col></colgroup>
+    <tr class="sec"><td colspan="3">Para uso da área de recursos humanos</td></tr>
+    <tr><td><span class="rot">Tipo de remuneração</span><br>${ck('Salário', false)}${ck('Bolsa auxílio (Estágio)', false)}</td>
+      <td><span class="rot">Salário (Convenção/acordo coletivo)</span><br>R$ ${val('')}</td>
+      <td><span class="rot">Salário a ser aplicado:</span><br>R$ ${val('')}</td></tr></table>
+
+  <table class="f"><colgroup><col style="width:46%"><col style="width:30%"><col></colgroup>
+    <tr class="sec"><td colspan="3">Dados do candidato aprovado para admissão</td></tr>
+    <tr><td><span class="rot">Nome:</span> ${val(C.nome)}</td><td><span class="rot">Cargo:</span> ${val(R.cargo)}</td>
+      <td><span class="rot">Nº calçado:</span> ${val(C.calcado)}</td></tr>
+    <tr><td colspan="3"><span class="rot">Tamanho do uniforme:</span>
+      ${['P', 'M', 'G', 'GG', 'XG', 'XXG', 'EG', 'EGG', 'EXG', 'EXGG'].map(t => ck(t, C.uniforme === t)).join('')}</td></tr>
+    <tr><td><span class="rot">Tem algum parente que trabalha na GCB?</span> ${simNao(C.parente)}</td>
+      <td><span class="rot">Nome:</span> ${val(C.parente === 'Sim' ? C.parente_nome : '')}</td>
+      <td><span class="rot">Cargo:</span> ${val(C.parente === 'Sim' ? C.parente_cargo : '')}</td></tr>
+    <tr><td><span class="rot">Indicado por alguém que trabalha na GCB?</span> ${simNao(C.indicado)}</td>
+      <td><span class="rot">Nome:</span> ${val(C.indicado === 'Sim' ? C.indicado_nome : '')}</td>
+      <td><span class="rot">Cargo:</span> ${val(C.indicado === 'Sim' ? C.indicado_cargo : '')}</td></tr>
+    <tr><td><span class="rot">Possui CNH:</span> ${simNao(C.cnh)} &nbsp; <span class="rot">Categoria:</span> ${val(C.cnh === 'Sim' ? C.cnh_categoria : '')}</td>
+      <td><span class="rot">Validade:</span> ${val(C.cnh === 'Sim' ? dataBR(C.cnh_validade) : '')}</td>
+      <td><span class="rot">Data 1ª CNH:</span> ${val(C.cnh === 'Sim' ? dataBR(C.cnh_primeira) : '')}</td></tr>
+    <tr><td><span class="rot">Autorizado a dirigir:</span> ${ck('Sim', false)}${ck('Não', false)}</td>
+      <td><span class="rot">Obra/Local:</span> ${val('')}</td><td><span class="rot">Data início:</span> ${val('')}</td></tr></table>
+
+  <table class="f ass"><colgroup><col><col><col></colgroup>
+    <tr class="sec"><td colspan="3" style="height:auto">Aprovação</td></tr>
+    <tr>${assinatura('Supervisor/Coordenador', A.supervisor)}${assinatura('Gerência', A.gerente)}${assinatura('Diretoria', null)}</tr></table>
+  <div class="rodape"><span>${esc(FORM.codigo)} rev. ${esc(FORM.revisao)} · ${esc(R.numero)} · pedido em ${esc(dataBR(R.pedido_em))}</span>
+    <span>Emitido pelo Sigma RH em ${esc(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }).slice(0, 17))}</span></div>
+</div>`;
+
+  // Texto longo de atividades: reduz a fonte até a folha caber em um A4 (nunca corta texto).
+  const folha = $('folha');
+  const limite = folha.getBoundingClientRect().width * 297 / 210;
+  let tam = 8.6;
+  while (folha.scrollHeight > limite + 1 && tam > 6) {
+    tam -= 0.2;
+    folha.querySelectorAll('.ajusta').forEach(e => e.style.fontSize = tam + 'pt');
+    if (tam <= 7.8) folha.classList.add('compacta');          // aperta espaçamento antes de apertar mais a letra
+    if (tam <= 7.0) folha.style.fontSize = (tam + 0.6) + 'pt';
+  }
+  if (folha.scrollHeight > limite + 1) console.warn('[FOR-RH-02] a folha passou de um A4 mesmo com a fonte reduzida.');
+  folha.dataset.transbordo = Math.max(0, Math.round(folha.scrollHeight - limite));
+
+  document.title = `${FORM.codigo} ${R.numero} ${C.nome || ''}`.trim();   // vira o nome do arquivo no "Salvar como PDF"
+  $('baixar').disabled = false;
+  $('baixar').onclick = () => window.print();
+})();
+</script>
+</body>
+</html>

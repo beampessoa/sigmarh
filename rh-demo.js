@@ -132,6 +132,7 @@
       const pend = S.conferencia[p_numero].itens.filter(i => i.obrigatorio !== false && i.situacao !== 'aprovado');
       if (pend.length) throw new Error(`Ainda há ${pend.length} documento(s) sem aprovação.`);
       S.reqs = S.reqs.filter(x => x !== r);
+      (S.admitidas = S.admitidas || {})[r.numero] = Object.assign({}, r, { etapa: 'admitida' });
       S.candidatos.unshift({ codigo: 'NV' + Math.floor(Math.random() * 1e6), nome: r.nome, funcao: r.funcao,
         desde: hoje(), tem_matricula_petrobras: false, origem: r.numero });
       return { ok: true, nome: r.nome, telefone: r.telefone, cadastro_existente: false,
@@ -151,6 +152,22 @@
       const c = S.contrato.splice(i, 1)[0];
       S.sairam.unshift({ codigo: c.codigo, nome: c.nome, funcao: c.funcao, entrada: c.entrada, fim: p_fim, motivo: p_motivo });
       return { ok: true };
+    },
+    rh_requisicao_folha: ({ p_numero }) => {
+      const r = S.reqs.find(x => x.numero === p_numero)
+        || Object.assign({}, S.admitidas?.[p_numero]);
+      if (!r || !r.numero) throw new Error('Pedido não encontrado.');
+      const d = r.dados_rp || { tipo: 'Efetivo', contrato: 'Experiência 90 dias', jornada: '1º turno', local: '033-REDUC',
+        area: 'Caldeiraria', recrutamento: 'Externo', motivo: r.motivo_vaga || 'Aumento de quadro', formacao: 'Médio',
+        atividades: 'Soldagem de tubulação em parada de manutenção.' };
+      const c = S.candidato.numero === r.numero ? S.candidato.dados : {};
+      const ass = (nome, funcao) => ({ nome, funcao, em: new Date().toLocaleDateString('pt-BR') + ' 08:12', codigo: 'A3F9C27B1D04' });
+      return { numero: r.numero, etapa: r.etapa, pedido_em: r.desde, cargo: r.funcao,
+        vaga: Object.assign({}, d, { motivo: d.motivo || r.motivo_vaga,
+          substituido: d.substituido_nome ? { nome: d.substituido_nome, funcao: '', saida: null } : null }),
+        candidato: Object.assign({ nome: r.nome }, c),
+        assinaturas: { supervisor: ass(r.supervisor, 'SUPERVISOR'),
+          gerente: ['aguardando_gerente', 'recusada'].includes(r.etapa) ? null : ass('PAULO ROBERTO SALES', 'GERENTE DO CONTRATO') } };
     },
     rh_acessos: () => S.acessos,
     rh_doc_tipos_listar: () => S.tipos.slice().sort((a, b) => (b.ativo - a.ativo) || (a.ordem - b.ordem)),
@@ -179,6 +196,8 @@
       efetivo: S.contrato.map(c => ({ codigo: c.codigo, nome: c.nome, funcao: c.funcao }))
     }),
     req_criar: ({ p_pin, p_dados }) => {
+      if ((p_dados.atividades || '').length > 600 || (p_dados.experiencia || '').length > 600)
+        throw new Error('Texto longo demais. Resuma: até 600 letras nas atividades e na experiência.');
       const nao = pinRecusado(p_pin); if (nao) return nao;
       S.seq = (S.seq || 10) + 1;
       const numero = 'RP-2026-00' + S.seq;

@@ -98,8 +98,8 @@ const VERSAO = '2026-10-05 · requisição · mt26';
         `<button type="button" data-v="${esc(o)}" aria-pressed="${R[p.k] === o}">${esc(o)}</button>`).join('')}</div>`;
     } else if (p.tipo === 'campos') {
       h += `<div id="err"></div>` + p.campos.map(c => `<div class="st-field"><label for="c-${c.k}">${esc(c.rot)}</label>
-        ${c.area ? `<textarea id="c-${c.k}" placeholder="${esc(c.ph || '')}">${esc(R[c.k] || '')}</textarea>`
-                 : `<input id="c-${c.k}" ${c.tel ? 'inputmode="tel" autocomplete="tel"' : ''} placeholder="${esc(c.ph || '')}" value="${esc(R[c.k] || '')}">`}
+        ${c.area ? `<textarea id="c-${c.k}" maxlength="600" placeholder="${esc(c.ph || '')}">${esc(R[c.k] || '')}</textarea>`
+                 : `<input id="c-${c.k}" maxlength="${c.tel ? 20 : 120}" ${c.tel ? 'inputmode="tel" autocomplete="tel"' : ''} placeholder="${esc(c.ph || '')}" value="${esc(R[c.k] || '')}">`}
         </div>`).join('') + `<button class="st-btn" id="seguir">Continuar</button>`;
     } else if (p.tipo === 'lista') {
       h += `<p class="guia">Escolha a pessoa que saiu ou vai sair.</p>

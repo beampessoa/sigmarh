@@ -172,6 +172,8 @@ const VERSAO = '2026-10-05 · gestão do RH · mt26';
     candidato: 'Colocar no contrato', contrato: 'Tirar do contrato'
   };
 
+  // número da requisição da linha: nas etapas do pedido vem em numero; depois da admissão, em origem
+  const numReq = r => r.numero || (/^RP-/.test(r.origem || '') ? r.origem : null);
   function pintarLista() {
     const q = ($('busca').value || '').trim().toLowerCase();
     const l = linhas.filter(r => !q || (r.nome || '').toLowerCase().includes(q));
@@ -179,6 +181,8 @@ const VERSAO = '2026-10-05 · gestão do RH · mt26';
     $('lista').innerHTML = l.map((r, i) => `
       <div class="linha">
         <div class="quem"><div class="nome">${esc(r.nome)}</div><div class="sub">${sub(r)}</div></div>
+        ${numReq(r) ? `<a class="st-btn" data-tom="quieto" title="Folha FOR-RH-02 para a diretoria assinar"
+          href="${esc(SigmaRH.comDemo('requisicao-folha.html?n=' + encodeURIComponent(numReq(r))))}">Requisição (PDF)</a>` : ''}
         ${BOTAO[atual] ? `<button type="button" class="st-btn" ${atual === 'contrato' || atual === 'link_enviado' ? 'data-tom="quieto"' : ''}
           data-i="${linhas.indexOf(r)}">${BOTAO[atual]}</button>` : ''}
       </div>`).join('');

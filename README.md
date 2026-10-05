@@ -16,6 +16,7 @@ Function da Vercel. O upload de documento vai por uma Edge Function do Supabase.
 | `shell.html` | RH | **Gestão do RH**: o caminho de cada contratação, da requisição ao contrato |
 | `acessos.html` | RH | marca quem pode pedir e quem pode aprovar contratação |
 | `demonstrativo.html` | quem for apresentar | botão **Demonstração** no menu: o caminho todo com dados de mentira, sem login e sem tocar no banco |
+| `requisicao-folha.html` | RH | FOR-RH-02 em folha A4 com as assinaturas por PIN; botão **Requisição (PDF)** em cada linha da Gestão do RH. Diretoria e salário em branco (D23, D24) |
 | `lista-documentos.html` | RH | a lista de documentos que o candidato vê no link (obrigatório, só com CNH, cônjuge, filho) |
 | `requisicao.html` | supervisor, coordenador | link pessoal do treinamento (`?k=`) e PIN |
 | `aprovacao.html` | gerente | link pessoal do treinamento (`?k=`) e PIN |
