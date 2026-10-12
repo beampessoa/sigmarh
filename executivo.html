@@ -28,6 +28,8 @@
   --good-ink:#6BD56B;--good-bg:#12301A;--warn-ink:#F7C55A;--warn-bg:#33270C;--crit-ink:#F08A8A;--crit-bg:#3A1A1C;
   --real:#E8EDF5;--real-ink:#0C121C;--demo:#A99CF2;--demo-bg:#231E42;--plan:#8B96A8;color-scheme:dark}
 *{box-sizing:border-box;margin:0;padding:0}
+.falha{background:#FCECEC;color:#A12A2A;border:1px solid #F3B4B4;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-weight:600}
+.falha.oculta{display:none}
 body{background:var(--bg);color:var(--ink);font:400 14.5px/1.5 var(--font);-webkit-font-smoothing:antialiased}
 button,select,input{font:inherit;color:inherit}
 a{color:inherit}
@@ -252,6 +254,8 @@ dialog.det::backdrop{background:rgba(8,13,22,.55)}
   </nav>
 
   <main>
+    <noscript><div class="falha">Este painel precisa de JavaScript ligado no navegador.</div></noscript>
+    <div class="falha oculta" id="falha">Os dados do painel não carregaram. Abra pelo endereço do site (rh.sigmacode.com.br/executivo) ou direto no navegador; a pré-visualização de arquivo não executa o JavaScript da página.</div>
     <div class="topo">
       <div>
         <button class="burger" id="burger" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
@@ -395,15 +399,158 @@ dialog.det::backdrop{background:rgba(8,13,22,.55)}
   </main>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
+<script>window.addEventListener('error', () => { if (!window.__painelOk) document.getElementById('falha').classList.remove('oculta'); });</script>
 <dialog class="det" id="det"><div class="in"><h2 id="det-t"></h2><p id="det-p"></p><div class="fon" id="det-f"></div><button type="button" id="det-x">Fechar</button></div></dialog>
 
-<script src="executivo-dados.js"></script>
+<!-- ═══ CAMADA DE DADOS (real, demonstração, planejado): única parte para atualizar ═══ -->
+<script>
+/* ============================================================================
+ * executivo-dados.js · dados do painel executivo (executivo.html)
+ *
+ * Três camadas, nunca misturadas:
+ *
+ *   REAL        retrato do banco do Sigma Treinamentos (contrato REDUC), medido por
+ *               consulta de leitura em 12/10/2026 às 13:13. Nada foi gravado.
+ *               Não é sincronização: para atualizar, medir de novo e trocar este bloco
+ *               (ou, na versão com login, ler das RPCs que já existem: painel_aptidao,
+ *               painel_vencendo, painel_funcoes_orfas, vw_aderencia_funcao).
+ *   DEMO        números inventados para mostrar o que o painel fará quando o Sigma RH
+ *               estiver no ar e os outros contratos entrarem. Contratos B a K são fictícios.
+ *   PLANEJADO   funções que ainda não existem. Aparecem como tal, sem número.
+ *
+ * Nenhum dado pessoal: sem nome, CPF, e-mail, salário ou documento.
+ * ========================================================================== */
+window.SIGMA_EXEC = (() => {
+
+  const REAL = {
+    medido_em: '12/10/2026 13:13',
+    fonte: 'Banco do Sigma Treinamentos (schema sigmatr), consulta só de leitura',
+    contrato: { id: 'REDUC', nome: 'REDUC · Manutenção industrial', cliente: 'GCB, fiscalização Petrobras', sap: '4600686554' },
+    pessoas: 198,            // todas no estado "candidato": o vínculo de contrato (mt24) ainda não existe
+    ciclo: { candidato: 198, mobilizado: 0, desmobilizado: 0 },
+    com_pin: 150,
+    com_selo: 127,
+    selos: 692,
+    selos_revogados: 0,
+    treinamentos: 53,
+    funcoes_com_matriz: 44,
+    listas_presenca: 9,
+    aptos_no_escopo: 96,     // vw_aptidao_pessoa.apto_no_escopo
+    com_treino_nunca_feito: 102,
+    vencendo_30d: 0,         // vw_vencendo sem linhas
+    funcoes_orfas_banco: 0,  // vw_funcoes_orfas sem linhas
+    // selos emitidos por semana (segunda-feira da semana)
+    selos_semana: [
+      ['24/08', 147], ['31/08', 13], ['07/09', 475], ['14/09', 53], ['21/09', 3], ['28/09', 1], ['05/10', 0]
+    ],
+    // vw_aderencia_funcao: funções com pessoas (função, setor, pessoas, aptas)
+    aderencia: [
+      ['Caldeireiro', 'CALD', 64, 35], ['Montador de Andaime', 'AND', 26, 11], ['Ajudante de Limpeza', 'PROD', 15, 10],
+      ['Supervisor de Montagem', 'PROD', 14, 5], ['Soldador TIG/ER', 'SOL', 11, 5], ['Caldeireiro Alpinista', 'ALPIN', 7, 6],
+      ['Eletricista', 'ELET', 4, 2], ['Técnico de Segurança', 'SMS', 4, 3], ['Inspetor de ENDs', 'QUA', 4, 3],
+      ['Almoxarife', 'ALMOX', 3, 2], ['Auxiliar de Almoxarifado', 'ALMOX', 3, 1], ['Técnico de Planejamento', 'PLAN', 3, 1],
+      ['Auxiliar de Movimentação de Cargas', 'MOV. CARGA', 3, 1], ['Auxiliar de Planejamento', 'PLAN', 3, 0],
+      ['Supervisor Geral', 'CALD', 2, 1], ['Auxiliar de Serviços Gerais', 'PROD', 2, 0], ['Inspetor de ENDs Alpinista', 'QUA', 2, 2],
+      ['Auxiliar de Materiais', 'MAT', 2, 0], ['Coordenador de Planejamento', 'PLAN', 2, 0], ['Técnico de Documentação', 'QUA', 2, 0],
+      ['Subcontratado', 'PROD', 2, 0], ['Motorista Operador de Munck', 'MOV. CARGA', 2, 0], ['Motorista Van', 'TRANS', 1, 0],
+      ['Assistente Administrativo', 'ADM', 1, 0], ['Inspetor de Equipamentos Alpinista', 'QUA', 1, 1],
+      ['Coordenador de Controle da Qualidade', 'QUA', 1, 0], ['Supervisor Alpinista N3', 'ALPIN', 1, 1],
+      ['Supervisor de Suprimentos', 'SUPRI', 1, 1], ['Auxiliar Administrativo', 'ADM', 1, 1], ['Projetista', 'PROJ', 1, 1],
+      ['Coordenador de Produção', 'PROD', 1, 0], ['Inspetor de Equipamento', 'QUA', 1, 1], ['Encarregado de Limpeza', 'COMP', 1, 1],
+      ['Supervisor de Andaime', 'AND', 1, 0], ['Gerente de Contrato', 'GER', 1, 0], ['Soldador Alpinista', 'SOL', 1, 0],
+      ['Técnico de Materiais', 'MAT', 1, 0], ['Inspetor de PM', 'QUA', 1, 1], ['Auxiliar Técnico de Planejamento', 'PLAN', 1, 0],
+      ['Auxiliar de Suprimentos', 'SUPRI', 1, 0]
+    ],
+    // registro de 12/09 na fila de pendências (não medido hoje): funções vindas da planilha do RH sem cadastro no sistema
+    funcoes_planilha_sem_cadastro: { qtd: 6, registrado_em: '12/09/2026', pessoas_paradas: 6 },
+    // public.retiradas_material: módulo de retirada no almoxarifado, uso inicial
+    almox_retiradas: { pedidos: 2, liberados: 0, desde: '01/10/2026' }
+  };
+
+  /* ── DEMONSTRAÇÃO ─────────────────────────────────────────────────────────
+     Contratos B a K são fictícios. "fonte" diz de onde viria o dado hoje:
+     'sigma' = já no sistema, 'planilha' = ainda em planilha enviada pelo contrato. */
+  const C = (id, porte, fonte, atualizado_dias, cad, mob, apt, docs, reqs, dias_mob) =>
+    ({ id, nome: 'Contrato ' + id, cliente: 'Cliente fictício', fonte, atualizado_dias,
+       cadastrados: cad, mobilizados: mob, aptos_pct: apt, docs_pendentes: docs, req_abertas: reqs, dias_mobilizacao: dias_mob, porte });
+  const CONTRATOS_DEMO = [
+    C('B', 'grande', 'planilha', 6, 312, 284, 71, 18, 7, 19),
+    C('C', 'grande', 'planilha', 11, 268, 241, 64, 25, 9, 23),
+    C('D', 'médio', 'planilha', 3, 154, 139, 78, 6, 3, 14),
+    C('E', 'médio', 'planilha', 17, 131, 118, 52, 21, 5, 27),
+    C('F', 'médio', 'planilha', 8, 117, 104, 69, 9, 4, 18),
+    C('G', 'pequeno', 'planilha', 5, 86, 80, 81, 3, 2, 12),
+    C('H', 'pequeno', 'planilha', 22, 74, 66, 47, 14, 3, 31),
+    C('I', 'pequeno', 'planilha', 4, 61, 57, 75, 4, 1, 15),
+    C('J', 'pequeno', 'planilha', 9, 48, 43, 66, 5, 2, 17),
+    C('K', 'pequeno', 'planilha', 13, 39, 35, 58, 7, 2, 21),
+  ];
+
+  // Jornada de uma contratação no Sigma RH, por contrato (números inventados)
+  const ETAPAS = ['Requisição de pessoal', 'Aprovação gerencial', 'Documentação solicitada', 'Documentação em análise',
+    'Cadastro liberado', 'Mobilização no contrato', 'Capacitação e aptidão'];
+  // [quantidade na etapa, dias médios parados]
+  const JORNADA_DEMO = {
+    REDUC: [[6, 1.5], [4, 2.8], [9, 4.1], [12, 6.3], [5, 1.2], [3, 2.0], [7, 3.4]],
+    B: [[5, 1.2], [3, 2.1], [7, 3.0], [10, 5.8], [4, 1.0], [2, 1.5], [6, 2.9]],
+    C: [[6, 1.9], [5, 4.6], [8, 3.5], [11, 7.2], [3, 1.3], [3, 2.2], [5, 3.1]],
+    D: [[2, 1.0], [1, 1.2], [3, 2.0], [3, 2.9], [2, 0.8], [1, 1.0], [2, 2.0]],
+    E: [[4, 2.2], [3, 3.9], [6, 4.4], [9, 8.1], [2, 1.6], [2, 2.5], [4, 3.8]],
+    F: [[3, 1.4], [2, 2.0], [4, 2.9], [5, 4.0], [2, 1.1], [1, 1.4], [3, 2.6]],
+    G: [[1, 0.8], [1, 1.0], [2, 1.9], [2, 2.4], [1, 0.9], [1, 1.0], [1, 1.8]],
+    H: [[3, 2.6], [2, 3.3], [5, 5.0], [7, 9.4], [1, 1.9], [1, 2.8], [3, 4.1]],
+    I: [[1, 1.0], [1, 1.1], [2, 2.0], [2, 2.6], [1, 0.9], [1, 1.1], [1, 1.9]],
+    J: [[2, 1.1], [1, 1.5], [2, 2.4], [3, 3.1], [1, 1.0], [1, 1.2], [2, 2.2]],
+    K: [[2, 1.5], [1, 2.0], [3, 3.2], [4, 4.6], [1, 1.2], [1, 1.6], [2, 2.7]],
+  };
+  const MOVIMENTOS_DEMO = { mobilizacoes_mes: 58, desmobilizacoes_mes: 41, remobilizacoes_mes: 9 };
+  // Efetivo mobilizado no fim de cada mês, todos os contratos fictícios somados (REDUC fora: sem vínculo ainda)
+  const EFETIVO_MES_DEMO = [['mai', 1009], ['jun', 1031], ['jul', 1058], ['ago', 1094], ['set', 1102], ['out', 1107]];
+
+  // Pendências de processo (nunca ranking de pessoas). Responsável é o papel, não o nome.
+  const PENDENCIAS_DEMO = [
+    { tipo: 'Documentação aguardando análise', contrato: 'REDUC', qtd: 12, resp: 'RH do contrato', situacao: 'atrasada', prazo: 'há 3 dias', acao: 'Conferir os documentos enviados no link e aprovar ou devolver com motivo.', origem: 'demo' },
+    { tipo: 'Requisições aguardando aprovação', contrato: 'C', qtd: 5, resp: 'Gerente do contrato', situacao: 'atrasada', prazo: 'há 2 dias', acao: 'Aprovar ou recusar com PIN; a vaga só anda depois disso.', origem: 'demo' },
+    { tipo: 'Planilha de efetivo desatualizada', contrato: 'H', qtd: 1, resp: 'Administrativo do contrato', situacao: 'atrasada', prazo: 'há 22 dias', acao: 'Enviar a planilha atual ou migrar o contrato para o Sigma.', origem: 'demo' },
+    { tipo: 'Pessoas com treinamento exigido pendente', contrato: 'REDUC', qtd: 102, resp: 'SGI e Qualidade', situacao: 'aberta', prazo: 'sem prazo definido', acao: 'Programar turmas por função, começando por Caldeireiro e Montador de Andaime.', origem: 'real' },
+    { tipo: 'Pessoas sem PIN de assinatura', contrato: 'REDUC', qtd: 48, resp: 'RH do contrato', situacao: 'aberta', prazo: 'sem prazo definido', acao: 'Cadastrar o PIN no balcão (fluxo presencial) antes do primeiro espelho de ponto.', origem: 'real' },
+    { tipo: 'Funções da planilha do RH sem cadastro no sistema', contrato: 'REDUC', qtd: 6, resp: 'SGI', situacao: 'aberta', prazo: 'desde 12/09', acao: 'Definir a matriz de treinamentos de cada função para liberar a importação das pessoas.', origem: 'real_registro' },
+    { tipo: 'Listas de presença sem retorno assinado registrado', contrato: 'REDUC', qtd: 9, resp: 'Qualidade', situacao: 'planejado', prazo: 'função não existe ainda', acao: 'Registrar a devolução da folha assinada (mt23 pendente de decisão).', origem: 'planejado' },
+    { tipo: 'Documentação aguardando análise', contrato: 'E', qtd: 9, resp: 'RH do contrato', situacao: 'atrasada', prazo: 'há 5 dias', acao: 'Conferir e aprovar; maior tempo parado da rede.', origem: 'demo' },
+    { tipo: 'Espelho de ponto sem assinatura', contrato: 'B', qtd: 37, resp: 'RH do contrato', situacao: 'no_prazo', prazo: 'vence em 3 dias', acao: 'Cobrar pelo WhatsApp em sequência na tela do espelho de ponto.', origem: 'demo' },
+  ];
+
+  const PLANEJADO = [
+    ['Vínculo de contrato (mobilização, desmobilização, remobilização)', 'mt24 escrita, não aplicada'],
+    ['Requisição, aprovação e documentação no banco', 'mt26 escrita, não aplicada; telas em demonstração'],
+    ['Espelho de ponto assinado por PIN', 'demonstração pronta; depende do PDF real do relógio'],
+    ['Ficha de EPI digital com confirmação por PIN', 'desenho'],
+    ['Retorno assinado das listas de presença', 'mt23 pendente de decisão'],
+    ['Relatórios consolidados e exportação', 'depois do piloto'],
+  ];
+
+  // Como medir o ganho no piloto (sem número antes de medir)
+  const MEDIDAS = [
+    ['Tempo de consolidação', 'Horas para reunir os 11 contratos, antes e depois'],
+    ['Retrabalho', 'Correções e duplicidades encontradas por mês'],
+    ['Tempo de mobilização', 'Dias entre a requisição e a liberação da pessoa'],
+    ['Pendências vencidas', 'Quantas e há quanto tempo estão abertas'],
+    ['Atualização dos dados', 'Tempo entre o fato e a visão da diretoria'],
+    ['Rastreabilidade', 'Movimentações com histórico e responsável registrados'],
+    ['Padronização', 'Contratos usando o mesmo processo e os mesmos indicadores'],
+  ];
+
+  return { REAL, CONTRATOS_DEMO, ETAPAS, JORNADA_DEMO, MOVIMENTOS_DEMO, EFETIVO_MES_DEMO, PENDENCIAS_DEMO, PLANEJADO, MEDIDAS };
+})();
+</script>
 <script>
 /* Painel executivo do SIGMA. Lê só executivo-dados.js: nenhuma chamada ao banco, nenhuma escrita.
    Toda caixa de número carrega a origem (real, demonstração, planejado). */
 const VERSAO = '2026-10-12 · executivo · demonstração';
 (() => {
-  const D = window.SIGMA_EXEC, R = D.REAL;
+  const D = window.SIGMA_EXEC, R = D && D.REAL;
+  if (!R) { document.getElementById('falha').classList.remove('oculta'); return; }
+  window.__painelOk = true;
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const nf = n => Number(n).toLocaleString('pt-BR');
