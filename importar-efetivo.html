@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Importar efetivo</title>
+<style>
+  .passo{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+  .passo-cab{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:13px 16px;text-align:left;cursor:pointer;font-family:inherit;min-height:56px}
+  .passo-cab:hover{background:#F7F9FD}
+  .passo .num{width:26px;height:26px;border-radius:50%;background:var(--canvas);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:1px solid var(--line);flex:none}
+  .passo.feito .num{background:var(--green-600);color:#fff;border-color:var(--green-600)}
+  .passo.aberto .num{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .passo .tit{font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--graphite-900)}
+  .passo .resumo{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right;max-width:55%}
+  .passo .resumo.ok{color:var(--green-600);font-weight:600}
+  .passo .resumo.warn{color:#B45309;font-weight:600}
+  .passo .seta{font-size:12px;color:var(--muted);flex:none;transition:.15s}
+  .passo.aberto .seta{transform:rotate(180deg)}
+  .passo-bd{display:none;padding:14px 16px 18px;border-top:1px solid var(--line)}
+  .passo.aberto .passo-bd{display:block}
+  .passo-ajuda{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:14px;background:#F7F9FD;border-left:3px solid var(--blue);border-radius:0 var(--r) var(--r) 0;padding:10px 12px}
+  .passo.avancado{background:#FBFCFE}
+  .passo.avancado .num{background:var(--graphite);color:#fff;border-color:var(--graphite)}
+  .dropzone{border:2px dashed #D7DEEA;border-radius:12px;padding:30px;text-align:center;cursor:pointer;background:var(--field)}
+  .dropzone:hover,.dropzone.drag{border-color:var(--blue);background:#EFF4FF}
+  .dropzone b{display:block;font-size:15px;margin-bottom:4px;color:var(--graphite)}
+  .dropzone span{font-size:13px;color:var(--muted)}
+  .chip{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-size:14px;margin-top:10px}
+  .chip .rm{margin-left:auto;background:none;border:0;color:#B91C1C;font-weight:700;cursor:pointer;min-height:40px}
+  .linha-bts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .map-grid .st-field{margin:0}
+  .map-grid select.falta{border-color:#F59E0B;background:#FFFBEB}
+  .req{color:#DC2626}
+  .opc{display:grid;gap:10px;max-width:720px}
+  .opc label{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;font-size:14px;line-height:1.5}
+  .opc label:has(input:checked){border-color:var(--blue);background:#EFF6FF}
+  .opc input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--blue)}
+  .opc b{display:block;color:var(--graphite)}
+  .conts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+  .cont{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;text-align:left;cursor:pointer;font-family:inherit;min-height:72px}
+  .cont b{display:block;font:700 24px var(--font-d);color:var(--graphite)}
+  .cont span{font-size:12.5px;color:var(--muted)}
+  .cont.ok b{color:#15803D}.cont.av b{color:#B45309}.cont.er b{color:#B91C1C}
+  .cont[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+  .tabwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table.prev{width:100%;border-collapse:collapse;font-size:13px}
+  table.prev th{background:var(--field);text-align:left;padding:8px 10px;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;border-bottom:1px solid var(--line)}
+  table.prev td{padding:8px 10px;border-bottom:1px solid #F1F4F9;vertical-align:top}
+  table.prev td.nw{white-space:nowrap}
+  table.prev tr.er td{background:#FEF7F7}
+  table.prev tr.av td{background:#FFFCF2}
+  .sit{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+  .sit.ok{color:#15803D}.sit.av{color:#B45309}.sit.er{color:#B91C1C}.sit.ig{color:#475569}
+  .motivos{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .motivos li{margin-left:16px}
+  .resumo-imp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+  .resumo-imp div{background:var(--field);border-radius:12px;padding:12px}
+  .resumo-imp b{display:block;font:700 26px var(--font-d);color:var(--graphite)}
+  .resumo-imp span{font-size:12.5px;color:var(--muted)}
+  .portao{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:12px}
+  .result{border-radius:12px;padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.55}
+  .result.ok{background:#F0FDF4;border:1px solid #BBF7D0;color:#166534}
+  .result.warn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
+  .result ul{margin:6px 0 0 18px}
+  .console{background:#0B1220;border:1px solid #223049;border-radius:12px;height:170px;overflow-y:auto;padding:10px 14px;margin-top:12px;font:12px/1.7 Consolas,Menlo,monospace;color:#8AA0C4}
+  .console .ok{color:#2BB673}.console .err{color:#E8544B}.console .warn{color:#F2A93B}.console .t{color:#4A5C82;margin-right:8px}
+  .regras{font-size:13px;line-height:1.6;color:var(--ink-soft)}
+  .regras li{margin:0 0 4px 18px}
+  .sem-arquivo{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body data-pagina="importar">
+<div id="app"><div class="content">
+  <div class="st-page-head">
+    <h1>Importar efetivo</h1>
+    <p>A planilha do RH com todo o efetivo, com data de entrada e de saída. <b>Cinco passos, de cima para baixo.</b>
+      Cada um mostra à direita o que já foi feito. Nada é gravado antes do passo 5, e só o que passou na conferência entra.</p>
+  </div>
+
+  <section class="passo aberto" id="passo1">
+    <button class="passo-cab" type="button" data-passo="1"><span class="num">1</span><span class="tit">Planilha</span><span class="resumo" id="res1">nenhum arquivo</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">Mande a planilha de efetivo como ela é, em .xlsx ou .csv. Só a <b>primeira aba</b> é lida, e a primeira linha
+        preenchida precisa ter os nomes das colunas. Quem saiu e voltou fica em <b>duas linhas</b>, uma por período, com o mesmo CPF.
+        A pessoa é reconhecida pelo <b>CPF</b>, não pelo nome nem pela matrícula: a matrícula Petrobras já veio repetida em pessoas diferentes.</div>
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Escolher planilha">
+        <b>Arraste a planilha aqui ou toque para escolher</b><span>.xlsx ou .csv · primeira aba</span>
+        <input type="file" id="arquivo" accept=".xlsx,.csv,text/csv" hidden></div>
+      <div id="chip"></div>
+      <div class="linha-bts" id="bts-exemplo"></div>
+    </div>
+  </section>
+
+  <section class="passo" id="passo2">
+    <button class="passo-cab" type="button" data-passo="2"><span class="num">2</span><span class="tit">Colunas</span><span class="resumo" id="res2">esperando a planilha</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">O sistema já ligou cada campo à coluna de nome parecido. Confira só os que estão em amarelo.
+        <b>A armadilha:</b> "Data de admissão" na GCB pode ser a data de entrada na empresa, não no contrato da REDUC. Use a coluna que diz
+        quando a pessoa começou <b>neste contrato</b>.</div>
+      <div class="map-grid" id="mapa"><p class="sem-arquivo">Escolha a planilha no passo 1.</p></div>
+      <div class="linha-bts"><button class="st-btn" type="button" id="ir3" disabled>As colunas estão certas</button></div>
+    </div>
+  </section>
+
+  <section class="passo" id="passo3">
+    <button class="passo-cab" type="button" data-passo="3"><span class="num">3</span><span class="tit">Data de saída</span><span class="resumo" id="res3">último dia trabalhado</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">O sistema guarda a saída como o <b>primeiro dia fora</b> do contrato. Se a planilha traz o último dia
+        trabalhado (o mais comum no RH), ele soma um dia sozinho. <b>A armadilha:</b> escolher errado desloca todas as saídas em um dia,
+        e a pessoa aparece no efetivo de um dia em que não estava.</div>
+      <div class="opc" id="opc-saida">
+        <label><input type="radio" name="saida" value="ultimo" checked><span><b>Último dia trabalhado</b>Ex.: 30/09 na planilha, a pessoa trabalhou no dia 30. Fica fora a partir de 01/10.</span></label>
+        <label><input type="radio" name="saida" value="primeiro"><span><b>Primeiro dia fora</b>Ex.: 30/09 na planilha, a pessoa não trabalhou no dia 30.</span></label>
+      </div>
+      <div class="linha-bts"><button class="st-btn" type="button" id="ir4">Conferir as linhas</button></div>
+    </div>
+  </section>
+
+  <section class="passo" id="passo4">
+    <button class="passo-cab" type="button" data-passo="4"><span class="num">4</span><span class="tit">Conferir</span><span class="resumo" id="res4">esperando a planilha</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">Cada linha foi conferida aqui e comparada com o cadastro. <b>Prontas</b> entram. <b>Com aviso</b> entram também,
+        com o que o sistema corrigiu sozinho (zero à esquerda no CPF, ano com dois dígitos, saída sem motivo). <b>Com problema</b> ficam de fora,
+        com o motivo, e você corrige na planilha e importa de novo: as que já entraram são reconhecidas e não duplicam.
+        Toque num contador para ver só aquelas linhas.</div>
+      <div id="portao"></div>
+      <div class="conts" id="conts"></div>
+      <div class="tabwrap"><table class="prev" id="prev"></table></div>
+      <p class="sem-arquivo" id="prev-rod" style="margin-top:8px"></p>
+    </div>
+  </section>
+
+  <section class="passo" id="passo5">
+    <button class="passo-cab" type="button" data-passo="5"><span class="num">5</span><span class="tit">Importar</span><span class="resumo" id="res5">nada importado</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">Grava em blocos, sem separar as linhas de uma mesma pessoa. Pessoa nova entra como candidata e já pode treinar;
+        cada período vira um vínculo com o contrato. Quem tem período aberto aparece no efetivo de hoje; quem só tem períodos fechados
+        aparece como "saiu". <b>Ninguém é desmobilizado por não estar na planilha</b>: para ver quem ficou de fora, use Ferramentas avançadas.</div>
+      <div class="resumo-imp" id="o-que-vai"></div>
+      <div class="linha-bts"><button class="st-btn" id="btn-importar" type="button" disabled>Importar</button></div>
+      <div class="console" id="console" hidden></div>
+      <div id="resultado"></div>
+    </div>
+  </section>
+
+  <section class="passo avancado" id="passo6">
+    <button class="passo-cab" type="button" data-passo="6"><span class="num">&#9881;</span><span class="tit">Ferramentas avançadas</span><span class="resumo">não é preciso no uso normal</span><span class="seta">&#9662;</span></button>
+    <div class="passo-bd">
+      <div class="passo-ajuda">Nada aqui é preciso para importar. Serve para conferir e para preparar a próxima planilha.</div>
+      <div class="linha-bts">
+        <button class="st-btn" data-tom="quieto" type="button" id="b-modelo">Baixar modelo de planilha (.csv)</button>
+        <button class="st-btn" data-tom="quieto" type="button" id="b-recusas" disabled>Baixar linhas com problema (.csv)</button>
+        <button class="st-btn" data-tom="quieto" type="button" id="b-fora" disabled>Quem está no contrato e não veio na planilha</button>
+      </div>
+      <div id="fora" style="margin-top:12px"></div>
+      <h3 style="font:700 14px var(--font-d);margin:16px 0 6px">Regras de conferência</h3>
+      <ul class="regras">
+        <li>Recusa: CPF com dígito errado; nome ou função em branco; função que não existe no cadastro; data de entrada vazia ou inválida;
+          saída antes da entrada; data no futuro; período aberto sem matrícula Petrobras; dois períodos da mesma pessoa que se cruzam;
+          linha repetida; mesma matrícula Petrobras em CPFs diferentes; período que cruza com outro já no cadastro.</li>
+        <li>Aviso (entra): CPF com zero à esquerda perdido pelo Excel; ano com dois dígitos; saída sem motivo (grava "Saída importada da planilha, sem motivo informado"); nome diferente do cadastro (fica o do cadastro).</li>
+        <li>Ignorada: período igual a um que já está no cadastro.</li>
+      </ul>
+    </div>
+  </section>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script src="rh-demo-efetivo.js"></script>
+<script>
+/* Importar o efetivo com períodos (entrada e saída). Sem biblioteca: o .xlsx é lido
+   com DecompressionStream e DOMParser do próprio navegador. Contrato das RPCs em rh-demo-efetivo.js. */
+const VERSAO = '2026-10-12 · importar efetivo · demonstração';
+(async () => {
+  const ok = await SigmaRH.init(); if (!ok) return;
+  SigmaRH.versaoPagina(VERSAO);
+  const { esc, rpc, frase, toast, fmt, DEMO } = SigmaRH;
+  const $ = id => document.getElementById(id);
+  const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const br = iso => iso ? iso.split('-').reverse().join('/') : '';
+  const HOJE = fmt.hoje();
+
+  const CAMPOS = [
+    { k: 'nome', rot: 'Nome', req: true, sin: ['nome', 'nome completo', 'colaborador', 'funcionario', 'empregado'] },
+    { k: 'cpf', rot: 'CPF', req: true, sin: ['cpf', 'n cpf', 'numero cpf', 'cpf do colaborador'] },
+    { k: 'funcao', rot: 'Função', req: true, sin: ['funcao', 'cargo', 'funcao cargo', 'cargo funcao', 'ocupacao'] },
+    { k: 'entrada', rot: 'Data de mobilização', req: true, sin: ['mobilizacao', 'data mobilizacao', 'data de mobilizacao', 'entrada', 'data entrada', 'data de entrada', 'inicio', 'admissao', 'data admissao', 'data de admissao'] },
+    { k: 'saida', rot: 'Data de desmobilização', req: false, sin: ['desmobilizacao', 'data desmobilizacao', 'data de desmobilizacao', 'saida', 'data saida', 'data de saida', 'demissao', 'data demissao', 'data de demissao', 'desligamento', 'data desligamento', 'fim'] },
+    { k: 'motivo', rot: 'Motivo da saída', req: false, sin: ['motivo', 'motivo saida', 'motivo da saida', 'motivo desligamento', 'motivo desmobilizacao', 'observacao'] },
+    { k: 'mat_pb', rot: 'Matrícula Petrobras', req: false, sin: ['matricula petrobras', 'mat petrobras', 'chave petrobras', 'matricula pb', 'cracha petrobras'] },
+    { k: 'mat_gcb', rot: 'Matrícula GCB', req: false, sin: ['matricula', 'matricula gcb', 'mat gcb', 're', 'registro'] },
+    { k: 'empresa', rot: 'Empresa', req: false, sin: ['empresa', 'empregador', 'subcontratada'] },
+  ];
+
+  let arquivoNome = '', cab = [], brutas = [], mapa = {}, linhas = [], filtro = 'todas', ultimaImportacao = null;
+
+  /* ── passos ── */
+  function abrirPasso(n) { document.querySelectorAll('.passo').forEach(x => x.classList.remove('aberto'));
+    const el = $('passo' + n); el.classList.add('aberto'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function resumo(n, txt, est) { const r = $('res' + n); r.textContent = txt; r.className = 'resumo' + (est ? ' ' + est : '');
+    $('passo' + n).classList.toggle('feito', est === 'ok'); }
+  document.querySelectorAll('[data-passo]').forEach(b => b.onclick = () => {
+    const el = $('passo' + b.dataset.passo), abrindo = !el.classList.contains('aberto');
+    document.querySelectorAll('.passo').forEach(x => x.classList.remove('aberto')); if (abrindo) el.classList.add('aberto'); });
+
+  /* ── leitura de .xlsx sem biblioteca ── */
+  async function inflar(bytes) {
+    const ds = new DecompressionStream('deflate-raw');
+    return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer());
+  }
+  async function zipArquivos(buf) {
+    const dv = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder();
+    let fim = -1; for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 70000); i--) if (dv.getUint32(i, true) === 0x06054b50) { fim = i; break; }
+    if (fim < 0) throw new Error('O arquivo não parece um .xlsx. Salve de novo no Excel como "Pasta de Trabalho do Excel" ou como .csv.');
+    const n = dv.getUint16(fim + 10, true); let p = dv.getUint32(fim + 16, true); const ent = {};
+    for (let i = 0; i < n; i++) {
+      const met = dv.getUint16(p + 10, true), tam = dv.getUint32(p + 20, true), ln = dv.getUint16(p + 28, true),
+        le = dv.getUint16(p + 30, true), lc = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+      ent[dec.decode(u8.subarray(p + 46, p + 46 + ln))] = { met, tam, off }; p += 46 + ln + le + lc;
+    }
+    return async nome => { const e = ent[nome]; if (!e) return null;
+      const ini = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+      const dados = u8.subarray(ini, ini + e.tam);
+      return dec.decode(e.met === 8 ? await inflar(dados) : dados); };
+  }
+  const xml = t => new DOMParser().parseFromString(t, 'application/xml');
+  const tags = (d, n) => Array.from(d.getElementsByTagNameNS('*', n));
+  const colIdx = ref => { const m = /^([A-Z]+)/.exec(ref || ''); let c = 0; for (const ch of (m ? m[1] : 'A')) c = c * 26 + ch.charCodeAt(0) - 64; return c - 1; };
+  async function lerXlsx(buf) {
+    const ler = await zipArquivos(buf);
+    const wb = xml(await ler('xl/workbook.xml')), rels = xml(await ler('xl/_rels/workbook.xml.rels') || '<r/>');
+    const sh = tags(wb, 'sheet')[0]; const rid = sh && (sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'));
+    const rel = tags(rels, 'Relationship').find(r => r.getAttribute('Id') === rid);
+    let alvo = rel ? rel.getAttribute('Target') : 'worksheets/sheet1.xml'; alvo = alvo.startsWith('/') ? alvo.slice(1) : 'xl/' + alvo;
+    const ssTxt = await ler('xl/sharedStrings.xml');
+    const ss = ssTxt ? tags(xml(ssTxt), 'si').map(si => tags(si, 't').map(t => t.textContent).join('')) : [];
+    const folha = xml(await ler(alvo));
+    const grade = [];
+    tags(folha, 'row').forEach((row, i) => { const lin = [];
+      tags(row, 'c').forEach(c => { const t = c.getAttribute('t'), v = tags(c, 'v')[0]; let val = '';
+        if (t === 's') val = ss[+(v && v.textContent)] ?? ''; else if (t === 'inlineStr') val = tags(c, 't').map(x => x.textContent).join('');
+        else val = v ? v.textContent : '';
+        lin[colIdx(c.getAttribute('r'))] = { v: val, n: !t || t === 'n' }; });
+      // a linha do Excel vem no atributo r: linhas vazias não aparecem no arquivo e o número tem que bater com a planilha
+      grade[(+row.getAttribute('r') || i + 1) - 1] = Array.from(lin, x => x || { v: '', n: false }); });
+    return Array.from(grade, l => l || []);
+  }
+  function lerCsv(txt) {
+    txt = txt.replace(/^﻿/, ''); const sep = (txt.split('\n')[0].match(/;/g) || []).length >= (txt.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+    const out = []; let lin = [], cel = '', q = false;
+    for (let i = 0; i < txt.length; i++) { const ch = txt[i];
+      if (q) { if (ch === '"' && txt[i + 1] === '"') { cel += '"'; i++; } else if (ch === '"') q = false; else cel += ch; }
+      else if (ch === '"') q = true; else if (ch === sep) { lin.push(cel); cel = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && txt[i + 1] === '\n') i++; lin.push(cel); out.push(lin); lin = []; cel = ''; }
+      else cel += ch; }
+    if (cel || lin.length) { lin.push(cel); out.push(lin); }
+    return out.map(l => l.map(v => ({ v, n: false })));
+  }
+  function carregarGrade(grade, nome) {
+    const cheias = grade.filter(l => l.some(c => String(c.v).trim() !== ''));
+    if (cheias.length < 2) { toast('A planilha não tem linhas de dados.', 'erro'); return; }
+    // a linha de cabeçalho é a que mais se parece com nomes de coluna (planilha pode ter título em cima)
+    const pontos = l => l.filter(c => CAMPOS.some(k => k.sin.includes(norm(c.v)))).length;
+    const cand = cheias.slice(0, 15).reduce((m, l) => pontos(l) > pontos(m) ? l : m, cheias[0]);
+    const iCab = grade.indexOf(cand);
+    if (grade.length - iCab < 2) { toast('A planilha não tem linhas de dados.', 'erro'); return; }
+    cab = cand.map((c, i) => String(c.v).trim() || 'Coluna ' + (i + 1));
+    brutas = [];
+    grade.slice(iCab + 1).forEach((l, j) => { if (l.some(c => String(c.v).trim() !== '')) brutas.push({ linha: iCab + j + 2, cel: l }); });
+    arquivoNome = nome;
+    $('chip').innerHTML = `<div class="chip"><b>${esc(nome)}</b><span>${brutas.length} linha(s) de dados</span><button class="rm" type="button" id="rm">remover</button></div>`;
+    $('rm').onclick = limpar;
+    resumo(1, `${brutas.length} linha(s) · ${nome}`, 'ok');
+    mapear(); abrirPasso(2);
+  }
+  async function abrirArquivo(f) {
+    try {
+      const buf = await f.arrayBuffer();
+      const grade = /\.csv$/i.test(f.name) ? lerCsv(new TextDecoder('utf-8').decode(buf)) : await lerXlsx(buf);
+      carregarGrade(grade, f.name);
+    } catch (e) { console.error(e); toast(e.message && /xlsx|csv/.test(e.message) ? e.message : 'Não foi possível ler a planilha. Salve como .xlsx ou .csv e tente de novo.', 'erro'); }
+  }
+  function limpar() { arquivoNome = ''; cab = []; brutas = []; mapa = {}; linhas = []; $('arquivo').value = ''; $('chip').innerHTML = '';
+    $('mapa').innerHTML = '<p class="sem-arquivo">Escolha a planilha no passo 1.</p>'; $('prev').innerHTML = ''; $('conts').innerHTML = ''; $('portao').innerHTML = '';
+    $('o-que-vai').innerHTML = ''; $('resultado').innerHTML = ''; $('btn-importar').disabled = true;
+    resumo(1, 'nenhum arquivo'); resumo(2, 'esperando a planilha'); resumo(4, 'esperando a planilha'); resumo(5, 'nada importado'); abrirPasso(1); }
+
+  const dz = $('dropzone');
+  dz.onclick = () => $('arquivo').click(); dz.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('arquivo').click(); } };
+  $('arquivo').onchange = e => e.target.files[0] && abrirArquivo(e.target.files[0]);
+  dz.ondragover = e => { e.preventDefault(); dz.classList.add('drag'); }; dz.ondragleave = () => dz.classList.remove('drag');
+  dz.ondrop = e => { e.preventDefault(); dz.classList.remove('drag'); e.dataTransfer.files[0] && abrirArquivo(e.dataTransfer.files[0]); };
+  if (DEMO && window.SigmaRHDemoEfetivo) {
+    $('bts-exemplo').innerHTML = '<button class="st-btn" data-tom="quieto" type="button" id="b-exemplo">Usar a planilha de exemplo (demonstração)</button>';
+    $('b-exemplo').onclick = () => carregarGrade(SigmaRHDemoEfetivo.exemplo().map(l => l.map(v => ({ v, n: false }))), 'efetivo-exemplo.xlsx');
+  }
+
+  /* ── passo 2: mapeamento ── */
+  function mapear() {
+    mapa = {}; const usadas = new Set();
+    CAMPOS.forEach(c => { const i = cab.findIndex((h, j) => !usadas.has(j) && c.sin.includes(norm(h))); mapa[c.k] = i; if (i >= 0) usadas.add(i); });
+    $('mapa').innerHTML = CAMPOS.map(c => `<div class="st-field"><label for="m-${c.k}">${esc(c.rot)} ${c.req ? '<span class="req">*</span>' : ''}</label>
+      <select id="m-${c.k}" data-campo="${c.k}" class="${mapa[c.k] < 0 ? 'falta' : ''}"><option value="-1">não usar</option>
+      ${cab.map((h, i) => `<option value="${i}" ${mapa[c.k] === i ? 'selected' : ''}>${esc(h)}</option>`).join('')}</select></div>`).join('');
+    $('mapa').querySelectorAll('select').forEach(s => s.onchange = () => { mapa[s.dataset.campo] = +s.value; s.classList.toggle('falta', +s.value < 0); conferir(); });
+    conferir();
+  }
+
+  /* ── conferência local ── */
+  function cpfValido(c) { if (!/^\d{11}$/.test(c) || /^(\d)\1+$/.test(c)) return false;
+    const dv = n => { let s = 0; for (let i = 0; i < n; i++) s += +c[i] * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+    return dv(9) === +c[9] && dv(10) === +c[10]; }
+  function lerData(cel) {
+    const v = String(cel?.v ?? '').trim(); if (!v) return { iso: null };
+    if (/^\d+(\.\d+)?$/.test(v) && +v > 20000 && +v < 80000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+v) * 864e5); return { iso: d.toISOString().slice(0, 10) }; }
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(v);
+    if (m) return valida(+m[1], +m[2], +m[3]);
+    m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(v);
+    if (m) { const curto = m[3].length === 2; const r = valida(curto ? 2000 + +m[3] : +m[3], +m[2], +m[1]); if (curto && r.iso) r.aviso = 'ano com dois dígitos lido como 20' + m[3]; return r; }
+    return { iso: null, erro: `data "${v}" não reconhecida` };
+    function valida(a, me, d) { const dt = new Date(Date.UTC(a, me - 1, d));
+      return dt.getUTCMonth() === me - 1 && dt.getUTCDate() === d ? { iso: dt.toISOString().slice(0, 10) } : { iso: null, erro: `data "${v}" não existe` }; }
+  }
+  const maisUm = iso => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+  const val = (b, k) => mapa[k] >= 0 ? String(b.cel[mapa[k]]?.v ?? '').trim() : '';
+  const celula = (b, k) => mapa[k] >= 0 ? b.cel[mapa[k]] : null;
+
+  function montarLinhas() {
+    const modo = document.querySelector('input[name=saida]:checked').value;
+    linhas = brutas.map(b => {
+      const L = { linha: b.linha, erros: [], avisos: [], nome: val(b, 'nome').toUpperCase().replace(/\s+/g, ' '), funcao: val(b, 'funcao'),
+        mat_pb: val(b, 'mat_pb').replace(/\D/g, ''), mat_gcb: val(b, 'mat_gcb'), empresa: val(b, 'empresa'), motivo: val(b, 'motivo') };
+      let cpf = val(b, 'cpf').replace(/\D/g, '');
+      if (cpf.length >= 9 && cpf.length < 11) { cpf = cpf.padStart(11, '0'); L.avisos.push('CPF sem o zero à esquerda (o Excel tira), corrigido'); }
+      L.cpf = cpf;
+      if (!L.nome) L.erros.push('nome em branco');
+      if (!cpf) L.erros.push('CPF em branco'); else if (!cpfValido(cpf)) L.erros.push('CPF com dígito verificador errado');
+      if (!L.funcao) L.erros.push('função em branco');
+      const e = lerData(celula(b, 'entrada')), s = lerData(celula(b, 'saida'));
+      if (!e.iso) L.erros.push(e.erro ? 'entrada: ' + e.erro : 'data de mobilização em branco'); if (e.aviso) L.avisos.push('entrada: ' + e.aviso);
+      if (s.erro) L.erros.push('saída: ' + s.erro); if (s.aviso) L.avisos.push('saída: ' + s.aviso);
+      L.entrada = e.iso; L.saida_planilha = s.iso; L.fim = s.iso ? (modo === 'ultimo' ? maisUm(s.iso) : s.iso) : null;
+      if (L.entrada && L.entrada > HOJE) L.erros.push(`mobilização no futuro (${br(L.entrada)}): importe depois dessa data`);
+      if (L.entrada && L.fim && L.fim <= L.entrada) L.erros.push('saída antes da entrada');
+      else if (L.fim && L.fim > HOJE) L.erros.push(`a saída ainda não aconteceu (fora a partir de ${br(L.fim)}): deixe em branco e lance a saída no dia`);
+      if (L.fim && !L.motivo) { L.motivo = 'Saída importada da planilha, sem motivo informado'; L.avisos.push('saída sem motivo, gravado texto padrão'); }
+      return L;
+    });
+    // linha repetida, períodos que se cruzam, período aberto sem matrícula, matrícula em CPFs diferentes
+    const porCpf = {};
+    linhas.forEach(L => { if (L.cpf && !L.erros.length) (porCpf[L.cpf] = porCpf[L.cpf] || []).push(L); });
+    Object.values(porCpf).forEach(g => {
+      g.sort((a, b) => a.entrada < b.entrada ? -1 : 1);
+      const vistas = {};
+      g.forEach(L => { const ch = L.entrada + '¦' + (L.fim || '');
+        if (vistas[ch]) { L.erros.push(`linha repetida (igual à linha ${vistas[ch]})`); } else vistas[ch] = L.linha; });
+      const vivas = g.filter(L => !L.erros.length);
+      for (let i = 0; i < vivas.length; i++) for (let j = i + 1; j < vivas.length; j++) {
+        const a = vivas[i], b = vivas[j];
+        if (a.entrada < (b.fim || '9999') && b.entrada < (a.fim || '9999')) b.erros.push(`período cruza com o da linha ${a.linha}`); }
+      g.forEach(L => { if (!L.erros.length && !L.fim && !L.mat_pb && !g.some(x => x.mat_pb))
+        L.erros.push('período aberto sem matrícula Petrobras: sem ela a pessoa não pode estar no contrato'); });
+    });
+    const donoMat = {};
+    linhas.forEach(L => { if (!L.mat_pb || L.erros.length) return;
+      if (donoMat[L.mat_pb] && donoMat[L.mat_pb].cpf !== L.cpf) L.erros.push(`matrícula Petrobras ${L.mat_pb} já é de outra pessoa (linha ${donoMat[L.mat_pb].linha})`);
+      else if (!donoMat[L.mat_pb]) donoMat[L.mat_pb] = L; });
+  }
+
+  async function conferir() {
+    const faltam = CAMPOS.filter(c => c.req && mapa[c.k] < 0);
+    resumo(2, faltam.length ? 'falta ligar: ' + faltam.map(c => c.rot).join(', ') : `${CAMPOS.filter(c => mapa[c.k] >= 0).length} de ${CAMPOS.length} campos ligados`, faltam.length ? 'warn' : 'ok');
+    $('ir3').disabled = !!faltam.length || !brutas.length;
+    if (faltam.length || !brutas.length) { $('btn-importar').disabled = true; resumo(4, 'esperando as colunas', 'warn');
+      linhas = []; $('prev').innerHTML = ''; $('conts').innerHTML = ''; $('o-que-vai').innerHTML = ''; $('portao').innerHTML = ''; $('prev-rod').textContent = ''; return; }
+    montarLinhas();
+    // comparação com o cadastro (sem gravar): só as linhas que passaram aqui
+    const enviar = linhas.filter(L => !L.erros.length).map(paraBanco);
+    const { data, error } = await rpc('rh_importar_efetivo_previa', { p_linhas: enviar });
+    if (error) { $('portao').innerHTML = `<div class="portao">${esc(frase(error))}</div>`; return; }
+    (data || []).forEach(p => { const L = linhas.find(x => x.linha === p.linha); if (!L) return;
+      L.cadastro = p.cadastro; L.vinculo = p.vinculo;
+      if (p.vinculo === 'conflito') L.erros.push(p.motivo);
+      if (p.nome_difere) L.avisos.push('nome diferente do cadastro: fica o do cadastro'); });
+    pintar();
+  }
+  function paraBanco(L) { return { linha: L.linha, cpf: L.cpf, nome: L.nome, funcao: L.funcao, entrada: L.entrada, fim: L.fim, motivo: L.fim ? L.motivo : null,
+    matricula_petrobras: L.mat_pb || null, matricula_gcb: L.mat_gcb || null, empresa: L.empresa || null }; }
+  const estado = L => L.erros.length ? 'er' : L.vinculo === 'igual' ? 'ig' : L.avisos.length ? 'av' : 'ok';
+
+  function pintar() {
+    const c = { ok: 0, av: 0, er: 0, ig: 0 }; linhas.forEach(L => c[estado(L)]++);
+    const novas = new Set(linhas.filter(L => estado(L) !== 'er' && L.cadastro === 'nova').map(L => L.cpf)).size;
+    const pessoas = new Set(linhas.filter(L => !['er', 'ig'].includes(estado(L))).map(L => L.cpf)).size;
+    // portão de identidade: muitos nomes diferentes do cadastro = CPF trocado de coluna ou planilha de outro contrato
+    const difere = linhas.filter(L => L.avisos.some(a => a.startsWith('nome diferente'))).length, base = linhas.filter(L => L.cadastro === 'existente').length;
+    const travaId = base >= 5 && difere / base > 0.05 && difere > 2;
+    $('portao').innerHTML = travaId ? `<div class="portao"><b>Importação travada.</b> ${difere} de ${base} pessoas já cadastradas vieram com outro nome.
+      Isso costuma ser CPF na coluna errada ou planilha de outro contrato. Confira a coluna CPF no passo 2.</div>` : '';
+    const K = [['todas', 'Total de linhas', linhas.length, ''], ['ok', 'Prontas', c.ok, 'ok'], ['av', 'Com aviso (entram)', c.av, 'av'],
+      ['er', 'Com problema (ficam fora)', c.er, 'er'], ['ig', 'Já no cadastro (ignoradas)', c.ig, '']];
+    $('conts').innerHTML = K.map(([k, r, n, cl]) => `<button type="button" class="cont ${cl}" data-f="${k}" aria-pressed="${filtro === k}"><b>${n}</b><span>${r}</span></button>`).join('');
+    $('conts').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filtro = b.dataset.f; pintar(); });
+    const vis = linhas.filter(L => filtro === 'todas' || estado(L) === filtro);
+    const ROT = { ok: ['ok', 'Pronta'], av: ['av', 'Com aviso'], er: ['er', 'Com problema'], ig: ['ig', 'Já existe'] };
+    $('prev').innerHTML = `<thead><tr><th>Linha</th><th>Situação</th><th>Nome</th><th>CPF</th><th>Função</th><th>Entrada</th><th>Saída</th><th>Cadastro</th></tr></thead><tbody>` +
+      vis.slice(0, 60).map(L => { const [cl, rt] = ROT[estado(L)];
+        return `<tr class="${cl === 'ok' || cl === 'ig' ? '' : cl}"><td class="nw">${L.linha}</td>
+        <td><span class="sit ${cl}">${rt}</span>${L.erros.length || L.avisos.length ? `<ul class="motivos">${L.erros.concat(L.avisos).map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}</td>
+        <td>${esc(L.nome || '—')}</td><td class="nw">${L.cpf && L.cpf.length === 11 ? '•••.•••.' + L.cpf.slice(6, 9) + '-' + L.cpf.slice(9) : esc(L.cpf || '—')}</td>
+        <td>${esc(L.funcao || '—')}</td><td class="nw">${br(L.entrada) || '—'}</td>
+        <td class="nw">${L.saida_planilha ? br(L.saida_planilha) + (L.fim !== L.saida_planilha ? `<div class="motivos">fora a partir de ${br(L.fim)}</div>` : '') : '<span class="motivos">no contrato</span>'}</td>
+        <td class="nw">${L.cadastro === 'nova' ? 'pessoa nova' : L.cadastro === 'existente' ? 'já cadastrada' : '—'}</td></tr>`; }).join('') + '</tbody>';
+    $('prev-rod').textContent = vis.length > 60 ? `Mostrando 60 de ${vis.length}. Os contadores valem para todas.` : '';
+    const entram = c.ok + c.av;
+    resumo(4, `${entram} entram · ${c.er} com problema${c.ig ? ' · ' + c.ig + ' já existem' : ''}`, c.er ? 'warn' : 'ok');
+    $('o-que-vai').innerHTML = `<div><b>${entram}</b><span>linhas vão entrar (períodos)</span></div><div><b>${pessoas}</b><span>pessoas</span></div>
+      <div><b>${novas}</b><span>pessoas novas no cadastro</span></div><div><b>${c.er}</b><span>ficam de fora, com o motivo</span></div>`;
+    $('btn-importar').disabled = !entram || travaId;
+    $('btn-importar').textContent = entram ? `Importar ${entram} linha(s)` : 'Importar';
+    $('b-recusas').disabled = !c.er;
+  }
+  document.querySelectorAll('input[name=saida]').forEach(r => r.onchange = () => {
+    resumo(3, r.value === 'ultimo' ? 'último dia trabalhado' : 'primeiro dia fora', 'ok'); if (brutas.length) conferir(); });
+
+  $('ir3').onclick = () => { resumo(3, document.querySelector('input[name=saida]:checked').value === 'ultimo' ? 'último dia trabalhado' : 'primeiro dia fora', 'ok'); abrirPasso(3); };
+  $('ir4').onclick = () => abrirPasso(4);
+
+  /* ── passo 5: gravar em blocos, sem partir uma pessoa ── */
+  function log(msg, nivel) { const c = $('console'); c.hidden = false; const d = document.createElement('div');
+    d.innerHTML = `<span class="t">${new Date().toLocaleTimeString('pt-BR')}</span>`; const s = document.createElement('span'); s.className = nivel || ''; s.textContent = msg;
+    d.appendChild(s); c.appendChild(d); c.scrollTop = c.scrollHeight; }
+  $('btn-importar').onclick = async () => {
+    const vao = linhas.filter(L => ['ok', 'av', 'ig'].includes(estado(L)));
+    const ok = await SigmaRH.confirmar({ titulo: 'Importar o efetivo', acao: 'Importar', tom: 'normal',
+      texto: `${vao.length} linha(s) de ${new Set(vao.map(L => L.cpf)).size} pessoa(s). As linhas com problema ficam de fora.` });
+    if (!ok) return;
+    const b = $('btn-importar'); b.disabled = true; $('console').innerHTML = ''; $('resultado').innerHTML = '';
+    const grupos = {}; vao.forEach(L => (grupos[L.cpf] = grupos[L.cpf] || []).push(paraBanco(L)));
+    const lotes = []; let atual = [];
+    Object.values(grupos).forEach(g => { if (atual.length + g.length > 100 && atual.length) { lotes.push(atual); atual = []; } atual = atual.concat(g); });
+    if (atual.length) lotes.push(atual);
+    const tot = { pessoas_criadas: 0, pessoas_existentes: 0, vinculos_criados: 0, vinculos_iguais: 0, recusadas: [] }; let fim = null;
+    log(`Importando ${vao.length} linha(s) em ${lotes.length} bloco(s).`);
+    for (let i = 0; i < lotes.length; i++) {
+      const { data, error } = await rpc('rh_importar_efetivo', { p_linhas: lotes[i], p_arquivo: arquivoNome });
+      if (error) { log(`Bloco ${i + 1}: ${frase(error)}`, 'err'); lotes[i].forEach(l => tot.recusadas.push({ linha: l.linha, motivo: frase(error) })); continue; }
+      ['pessoas_criadas', 'pessoas_existentes', 'vinculos_criados', 'vinculos_iguais'].forEach(k => tot[k] += data[k] || 0);
+      tot.recusadas.push(...(data.recusadas || [])); fim = data;
+      log(`Bloco ${i + 1}: ${data.vinculos_criados} período(s) gravado(s), ${data.vinculos_iguais} já existia(m), ${(data.recusadas || []).length} recusado(s).`, (data.recusadas || []).length ? 'warn' : 'ok');
+    }
+    // reconciliação: o que foi mandado tem que bater com o que voltou
+    const conta = tot.vinculos_criados + tot.vinculos_iguais + tot.recusadas.length;
+    if (conta !== vao.length) log(`Atenção: mandei ${vao.length} linha(s) e o banco respondeu por ${conta}. Confira antes de importar de novo.`, 'err');
+    else log('Conferido: todas as linhas enviadas têm resposta.', 'ok');
+    tot.recusadas.forEach(r => { const L = linhas.find(x => x.linha === r.linha); if (L) L.erros.push(r.motivo); });
+    ultimaImportacao = tot;
+    const parcial = tot.recusadas.length || conta !== vao.length;
+    $('resultado').innerHTML = `<div class="result ${parcial ? 'warn' : 'ok'}"><b>${tot.vinculos_criados} período(s) gravado(s)${fim && fim.importacao ? ' · ' + esc(fim.importacao) : ''}.</b>
+      ${tot.pessoas_criadas} pessoa(s) nova(s), ${tot.pessoas_existentes} já cadastrada(s), ${tot.vinculos_iguais} período(s) que já existiam.
+      ${fim ? `<br>No contrato hoje: <b>${fim.no_contrato_hoje}</b> · saíram: <b>${fim.sairam}</b> · candidatas sem período: <b>${fim.candidatas}</b>.` : ''}
+      ${tot.recusadas.length ? `<br>${tot.recusadas.length} recusada(s) pelo banco:<ul>${tot.recusadas.slice(0, 20).map(r => `<li>linha ${r.linha}: ${esc(r.motivo)}</li>`).join('')}</ul>` : ''}
+      ${linhas.filter(L => estado(L) === 'er').length ? `<br>As linhas com problema estão em Ferramentas avançadas, para baixar e corrigir.` : ''}</div>`;
+    resumo(5, `${tot.vinculos_criados} período(s) gravado(s)${parcial ? ' · ' + tot.recusadas.length + ' recusada(s)' : ''}`, parcial ? 'warn' : 'ok');
+    $('b-fora').disabled = false; b.disabled = false; b.textContent = 'Importar de novo (as que já entraram são ignoradas)';
+    toast(`${tot.vinculos_criados} período(s) gravado(s).`, parcial ? undefined : 'ok');
+    await conferir();
+  };
+
+  /* ── avançado ── */
+  const csv = (nome, linhasCsv) => { const cel = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const blob = new Blob(['﻿' + linhasCsv.map(l => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+  $('b-modelo').onclick = () => csv('modelo-efetivo.csv', [['Nome', 'CPF', 'Função', 'Matrícula Petrobras', 'Matrícula GCB', 'Empresa', 'Data de mobilização', 'Data de desmobilização', 'Motivo da saída'],
+    ['NOME COMPLETO DA PESSOA', '000.000.000-00', 'Caldeireiro', '40000000', '', 'GCB', '20/08/2026', '', ''],
+    ['MESMA PESSOA SE SAIU E VOLTOU', '000.000.000-00', 'Caldeireiro', '40000000', '', 'GCB', '01/06/2026', '31/07/2026', 'Fim da parada']]);
+  $('b-recusas').onclick = () => csv('linhas-com-problema.csv', [['Linha', 'Nome', 'Função', 'Problema']].concat(
+    linhas.filter(L => estado(L) === 'er').map(L => [L.linha, L.nome, L.funcao, L.erros.join(' | ')])));
+  $('b-fora').onclick = async () => {
+    const { data, error } = await rpc('rh_efetivo_fora_da_planilha', { p_cpfs: [...new Set(linhas.map(L => L.cpf))] });
+    if (error) { toast(frase(error), 'erro'); return; }
+    $('fora').innerHTML = data.length ? `<div class="result warn"><b>${data.length} pessoa(s) no contrato hoje que não vieram nesta planilha.</b> Nada foi feito com elas.
+      Se saíram, lance a saída na Gestão do RH.<ul>${data.map(p => `<li>${esc(p.nome)}</li>`).join('')}</ul></div>`
+      : '<div class="result ok">Todo mundo que está no contrato hoje veio na planilha.</div>';
+  };
+})();
+</script>
+</body>
+</html>

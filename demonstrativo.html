@@ -60,7 +60,10 @@
 
   <ol><li class="rh"><span class="quem">Diretoria · computador</span><span class="oque">Painel executivo dos 11 contratos</span>
       <span class="txt">Visão consolidada, jornada da mão de obra, capacitação real da REDUC, pendências e simulador de retorno.</span>
-      <a href="executivo.html">Abrir</a></li></ol>
+      <a href="executivo.html">Abrir</a></li>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Importa o efetivo completo</span>
+      <span class="txt">A planilha de efetivo com entrada e saída de cada pessoa. Confere linha por linha antes de gravar; use "planilha de exemplo".</span>
+      <a href="importar-efetivo.html?demo=1">Abrir</a></li></ol>
 
   <div>
     <h2>Espelho de ponto assinado no celular<span class="novo">novo</span></h2>
@@ -117,7 +120,7 @@
 </div>
 <script>
 document.getElementById('reiniciar').addEventListener('click', () => {
-  try { ['sigmarh_demo_v1', 'sigmarh_demo_v2', 'sigmarh_demo_v3', 'sigmarh_demo_ponto_v1'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  try { ['sigmarh_demo_v1', 'sigmarh_demo_v2', 'sigmarh_demo_v3', 'sigmarh_demo_ponto_v1', 'sigmarh_demo_efetivo_v1'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
   document.getElementById('reiniciado').hidden = false;
 });
 </script>
