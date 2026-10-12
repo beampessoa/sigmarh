@@ -8,7 +8,7 @@
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-  /* Layout: uma coluna estreita; o caminho da contratação em ordem, cada etapa abre a tela de quem age nela. */
+  /* Layout: uma coluna estreita; cada caminho em ordem, cada etapa abre a tela de quem age nela. */
   :root{--bg:#F1F4F9;--card:#FFFFFF;--fg:#1F2937;--soft:#4B5563;--muted:#6B7280;--line:#E2E8F0;
     --accent:#0F4CBA;--accent-bg:#EFF6FF;--warn:#B45309;--warn-bg:#FFFBEB;
     --font-d:'Exo 2',system-ui,sans-serif;--font-ui:'Inter',system-ui,sans-serif}
@@ -24,6 +24,7 @@
   .topo b{font:700 22px var(--font-d);display:block;line-height:1.1}
   .topo span{color:var(--muted);font-size:13.5px}
   h1{font:700 clamp(24px,4vw,30px)/1.2 var(--font-d);text-wrap:balance;margin:0}
+  h2{font:700 21px/1.25 var(--font-d);margin:14px 0 0;text-wrap:balance}
   p{margin:0;color:var(--soft);max-width:65ch}
   .aviso{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:14px;font-weight:500}
   .aviso b{font-weight:700}
@@ -44,6 +45,8 @@
   .rodape{font-size:12.5px;color:var(--muted)}
   .reiniciar{background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:10px;min-height:44px;
     padding:0 14px;font:600 14px var(--font-ui);cursor:pointer}
+  .novo{display:inline-block;margin-left:8px;font:700 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;
+    background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:3px 7px;vertical-align:middle}
   @media (max-width:560px){li{grid-template-columns:34px 1fr}li a{grid-column:1 / -1;grid-row:auto;text-align:center;margin-top:8px}}
 </style>
 </head>
@@ -52,16 +55,42 @@
   <div class="topo"><span class="marca" aria-hidden="true">&Sigma;</span>
     <div><b>Sigma RH</b><span>RH operacional do contrato GCB · demonstração</span></div></div>
 
+  <div class="aviso"><b>Dados de mentira.</b> Nada vai para o banco. As telas conversam entre si neste navegador:
+    o que você fizer numa tela aparece na outra. Quando pedir PIN, use <b>1234</b>.</div>
+
+  <ol><li class="rh"><span class="quem">Diretoria · computador</span><span class="oque">Painel executivo dos 11 contratos</span>
+      <span class="txt">Visão consolidada, jornada da mão de obra, capacitação real da REDUC, pendências e simulador de retorno.</span>
+      <a href="executivo.html">Abrir</a></li></ol>
+
   <div>
-    <h1>Uma contratação, do pedido do supervisor até o contrato</h1>
+    <h2>Espelho de ponto assinado no celular<span class="novo">novo</span></h2>
+    <p style="margin-top:8px">O RH sobe o PDF do mês uma vez, o sistema separa por pessoa, e cada colaborador confere e assina
+      com o PIN do treinamento. O RH vê quem falta e cobra pelo WhatsApp sem sair da tela.</p>
+  </div>
+  <ol>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Importa o PDF do mês</span>
+      <span class="txt">Um PDF com todos os espelhos. O sistema separa por pessoa; o que não reconhecer fica em "Sem dono".</span>
+      <a href="ponto.html?demo=1">Abrir</a></li>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Cobra quem falta</span>
+      <span class="txt">"Cobrar em sequência": abre o WhatsApp de um por um, com o link e o prazo na mensagem.</span>
+      <a href="ponto.html?demo=1">Abrir</a></li>
+    <li><span class="quem">Colaborador · celular</span><span class="oque">Confere e assina, ou não concorda</span>
+      <span class="txt">Portal do colaborador: o espelho do mês na primeira tela. Assina com o PIN, ou marca os dias errados e diz o motivo. No mesmo portal: o EPI recebido (confirma com PIN) e o material que retirou no almoxarifado.</span>
+      <a href="portal.html?k=demo&amp;demo=1">Abrir</a></li>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Responde quem não concordou</span>
+      <span class="txt">Aba "Não concordaram": corrige e reenvia, ou explica por que está certo. A pessoa assina a versão nova.</span>
+      <a href="ponto.html?demo=1">Abrir</a></li>
+  </ol>
+
+  <div>
+    <h2>Uma contratação, do pedido do supervisor até o contrato</h2>
     <p style="margin-top:8px">Cada etapa abre a tela de quem age nela. As telas de supervisor, gerente e candidato
       são para celular; a Gestão do RH é para o computador.</p>
   </div>
-
-  <div class="aviso"><b>Dados de mentira.</b> Nada vai para o banco. As telas conversam entre si neste navegador:
-    o pedido que você fizer como supervisor aparece para o gerente, e assim por diante. Quando pedir PIN, use <b>1234</b>.</div>
-
   <ol>
+    <li class="rh"><span class="quem">RH · computador</span><span class="oque">Manda o link para supervisores e gerentes</span>
+      <span class="txt">Em "Quem pede e aprova": marca quem pede e quem aprova e manda o link pessoal pelo WhatsApp. Uma vez só.</span>
+      <a href="acessos.html?demo=1">Abrir</a></li>
     <li><span class="quem">Supervisor ou coordenador · celular</span><span class="oque">Pede a contratação</span>
       <span class="txt">Requisição FOR-RH-02, uma pergunta por tela, assinada com o PIN.</span>
       <a href="requisicao.html?demo=1">Abrir</a></li>
@@ -82,11 +111,13 @@
   <div class="extra">Também: <a href="acessos.html?demo=1">Quem pede e aprova</a> e <a href="lista-documentos.html?demo=1">Lista de documentos</a> (o que o RH cadastra antes).</div>
   <div class="extra"><button type="button" id="reiniciar" class="reiniciar">Recomeçar a demonstração do zero</button>
     <span id="reiniciado" class="rodape" hidden>Pronto, tudo voltou aos exemplos do início.</span></div>
-  <p class="rodape">A lista de documentos desta demonstração é um exemplo. A real sai da lista de admissão da GCB.<br>Dica para apresentar: abra o celular do supervisor, depois o do gerente, e mostre o pedido chegando na Gestão do RH.</p>
+  <p class="rodape">A lista de documentos e os espelhos desta demonstração são exemplos.<br>
+    Dica para apresentar o ponto: importe o PDF como RH, toque em "simular alguns assinando", depois abra o portal no celular
+    como o João e assine. Volte ao RH e mostre a contagem subindo.</p>
 </div>
 <script>
 document.getElementById('reiniciar').addEventListener('click', () => {
-  try { localStorage.removeItem('sigmarh_demo_v1'); localStorage.removeItem('sigmarh_demo_v2'); } catch (e) {}
+  try { ['sigmarh_demo_v1', 'sigmarh_demo_v2', 'sigmarh_demo_v3', 'sigmarh_demo_ponto_v1'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
   document.getElementById('reiniciado').hidden = false;
 });
 </script>

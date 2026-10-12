@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sigma RH · Espelho de ponto</title>
+<style>
+  .topo-p{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+  .topo-p .st-field{margin:0;min-width:220px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--sh)}
+  .kpi span{display:block;font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .kpi b{display:block;font:700 30px var(--font-d);color:var(--graphite);margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi small{font-size:13px;color:var(--ink-soft)}
+  .kpi.ok b{color:#15803D}.kpi.aviso b{color:#B45309}.kpi.nao b{color:#B91C1C}
+  .barra-g{height:10px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin-top:10px}
+  .barra-g i{display:block;height:100%;background:#16A34A}
+  .abas{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .abas button{min-height:44px;padding:0 16px;border:1px solid var(--line);background:#fff;border-radius:10px;
+    font:600 14px var(--font-ui);color:var(--ink-soft);cursor:pointer}
+  .abas button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+  .abas button em{font-style:normal;margin-left:6px;opacity:.8}
+  table.lista{width:100%;border-collapse:collapse;font-size:14px}
+  .lista th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:2px solid var(--line)}
+  .lista td{padding:10px;border-bottom:1px solid #EEF1F5;vertical-align:middle}
+  .lista td.acao{text-align:right;white-space:nowrap}
+  .lista .st-btn{min-height:40px;padding:0 14px;font-size:14px}
+  .vazio{padding:22px;text-align:center;color:var(--muted)}
+  .disc{border:1px solid #FECACA;background:#FEF2F2;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .disc b{color:var(--graphite)}
+  .disc p{margin:6px 0 10px;color:#7F1D1D;font-size:14.5px}
+  .disc .linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .imp{max-width:640px}
+  .imp ol{margin:0 0 16px 18px;color:var(--ink-soft);font-size:14px;line-height:1.7}
+  .demo-link{background:none;border:1px dashed #CA8A04;color:#854D0E;border-radius:10px;min-height:40px;padding:0 14px;
+    font:600 13px var(--font-ui);cursor:pointer}
+  select.vinc{min-height:40px;border:1.5px solid #D7DEEA;border-radius:8px;padding:0 8px;font:inherit;background:var(--field)}
+  @media(max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.lista .esconde{display:none}}
+</style>
+</head>
+<body data-pagina="ponto">
+<div id="app">
+  <div class="st-page-head"><h1>Espelho de ponto</h1>
+    <p>Todo mês: importe o PDF do relógio, o sistema separa por pessoa e cada um assina no celular com o PIN.
+       Aqui você vê quem assinou, quem falta e quem não concordou.</p></div>
+  <div class="topo-p">
+    <div class="st-field"><label for="comp">Mês do espelho</label><select id="comp"></select></div>
+    <span id="demo-acao"></span>
+  </div>
+  <div id="corpo"><p>Carregando...</p></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="rh-ui.js"></script>
+<script src="rh-demo.js"></script>
+<script src="rh-demo-ponto.js"></script>
+<script>
+const VERSAO = '2026-10-12 · ponto · demonstração';
+(async () => {
+  const ok = await SigmaRH.init(); if (!ok) return;
+  SigmaRH.versaoPagina(VERSAO);
+  const { esc, rpc, frase, toast, fmt, wa, DEMO } = SigmaRH;
+  const corpo = document.getElementById('corpo');
+  const selComp = document.getElementById('comp');
+  const quando = iso => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  let P = null, aba = 'pendente';
+
+  async function competencias() {
+    const { data, error } = await rpc('rh_ponto_competencias');
+    if (error) { corpo.innerHTML = `<div class="st-card">${esc(frase(error))}</div>`; return false; }
+    const atual = selComp.value;
+    selComp.innerHTML = data.map(c => `<option value="${esc(c.competencia)}">${esc(c.nome)}${c.importado_em ? ` · ${c.assinados} de ${c.total} assinados` : ' · não importado'}</option>`).join('');
+    if (atual) selComp.value = atual;
+    return true;
+  }
+
+  async function carregar() {
+    const { data, error } = await rpc('rh_ponto_painel', { p_competencia: selComp.value });
+    if (error) { corpo.innerHTML = `<div class="st-card">${esc(frase(error))}</div>`; return; }
+    P = data;
+    document.getElementById('demo-acao').innerHTML = DEMO && P.importado && P.pendentes > 1
+      ? '<button class="demo-link" id="demo-avancar">Demonstração: simular alguns assinando</button>' : '';
+    if (!P.importado) return importar();
+    pintar();
+  }
+
+  // Passo 1: importar o PDF único do mês.
+  function importar() {
+    corpo.innerHTML = `<div class="st-card imp"><h2 style="font:700 18px var(--font-d);margin-bottom:10px">Importar o espelho de ${esc(P.nome)}</h2>
+      <ol><li>No programa do relógio, gere o espelho de todos em <b>um PDF só</b>.</li>
+        <li>Escolha o arquivo aqui. O sistema lê nome e matrícula de cada página e separa por pessoa.</li>
+        <li>Páginas que ele não reconhecer ficam em <b>Sem dono</b> para você escolher a pessoa.</li></ol>
+      <div class="st-field"><label for="arq">PDF do espelho</label><input type="file" id="arq" accept="application/pdf"></div>
+      <div class="st-field"><label for="prazo">Prazo para assinar</label><input type="date" id="prazo" value="${esc(prazoPadrao())}"></div>
+      <div id="imp-err"></div>
+      <button class="st-btn" id="importar">Importar e separar por pessoa</button></div>`;
+  }
+  function prazoPadrao() { const d = new Date(); d.setDate(Math.max(d.getDate() + 3, 10)); return d.toISOString().slice(0, 10); }
+
+  function pintar() {
+    const pct = P.total ? Math.round(100 * P.assinados / P.total) : 0;
+    const abas = [['pendente', 'Faltam assinar', P.pendentes], ['discordou', 'Não concordaram', P.discordou],
+      ['sem_dono', 'Sem dono', P.sem_dono], ['assinado', 'Assinaram', P.assinados]];
+    corpo.innerHTML = `
+      <div class="kpis">
+        <div class="kpi ok"><span>Assinaram</span><b>${P.assinados} de ${P.total}</b><div class="barra-g"><i style="width:${pct}%"></i></div></div>
+        <div class="kpi aviso"><span>Faltam assinar</span><b>${P.pendentes}</b><small>prazo ${esc(fmt.data(P.prazo))}</small></div>
+        <div class="kpi nao"><span>Não concordaram</span><b>${P.discordou}</b><small>${P.discordou ? 'o RH precisa responder' : 'nenhuma pendente'}</small></div>
+        <div class="kpi"><span>Páginas sem dono</span><b>${P.sem_dono}</b><small>${esc(P.importado.arquivo)}, ${P.importado.paginas} páginas</small></div>
+      </div>
+      <div class="abas">${abas.map(([k, t, n]) => `<button data-aba="${k}" aria-pressed="${aba === k}">${t}<em>${n}</em></button>`).join('')}</div>
+      <div class="st-card" id="lista"></div>`;
+    lista();
+  }
+
+  function lista() {
+    const el = document.getElementById('lista');
+    const ps = P.pessoas.filter(p => p.situacao === aba);
+    if (aba === 'pendente') {
+      el.innerHTML = !ps.length ? '<div class="vazio">Todo mundo já assinou ou respondeu.</div>' : `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="color:var(--ink-soft);font-size:14px">A mensagem vai com o link pessoal e o prazo. Você manda do seu WhatsApp.</span>
+          <button class="st-btn" id="cobrar-todos">Cobrar os ${ps.length} em sequência</button></div>
+        <table class="lista"><thead><tr><th>Nome</th><th class="esconde">Função</th><th>Cobranças</th><th></th></tr></thead><tbody>
+        ${ps.map(p => `<tr><td><b>${esc(p.nome)}</b>${p.versao > 1 ? ' <span class="st-tarja" data-s="aviso">corrigido</span>' : ''}</td>
+          <td class="esconde">${esc(p.funcao)}</td>
+          <td>${p.cobrancas ? `${p.cobrancas}x, última ${esc(quando(p.ultima_cobranca))}` : 'nenhuma'}</td>
+          <td class="acao"><button class="st-btn" data-tom="quieto" data-cobrar="${esc(p.codigo)}">Cobrar</button></td></tr>`).join('')}
+        </tbody></table>`;
+    } else if (aba === 'discordou') {
+      el.innerHTML = !ps.length ? '<div class="vazio">Ninguém discordou do espelho.</div>' : ps.map(p => `<div class="disc">
+        <b>${esc(p.nome)}</b> · ${esc(p.funcao)} · em ${esc(quando(p.discordancia.em))}
+        <p><b>Dias:</b> ${esc(p.discordancia.dias.join(', '))}<br>"${esc(p.discordancia.motivo)}"</p>
+        <div class="linha"><button class="st-btn" data-resp="corrigido" data-cod="${esc(p.codigo)}">Corrigi e reenviei</button>
+          <button class="st-btn" data-tom="quieto" data-resp="mantido" data-cod="${esc(p.codigo)}">Está certo, vou explicar</button></div></div>`).join('');
+    } else if (aba === 'sem_dono') {
+      el.innerHTML = !P.paginas_sem_dono.length ? '<div class="vazio">Todas as páginas do PDF têm dono.</div>' : `
+        <p style="color:var(--ink-soft);font-size:14px;margin-bottom:10px">O sistema não reconheceu estas páginas. Escolha de quem é cada uma.</p>
+        <table class="lista"><thead><tr><th>Página</th><th>Nome no PDF</th><th class="esconde">Matrícula no PDF</th><th>É de</th><th></th></tr></thead><tbody>
+        ${P.paginas_sem_dono.map(s => `<tr><td>${s.pagina}</td><td>${esc(s.nome_lido)}</td><td class="esconde">${esc(s.matricula_lida || 'não leu')}</td>
+          <td><select class="vinc" id="v${s.pagina}"><option value="">Escolha a pessoa</option>
+            ${P.sem_espelho.map(x => `<option value="${esc(x.codigo)}">${esc(x.nome)}</option>`).join('')}</select></td>
+          <td class="acao"><button class="st-btn" data-vinc="${s.pagina}">Vincular</button></td></tr>`).join('')}
+        </tbody></table>`;
+    } else {
+      el.innerHTML = !ps.length ? '<div class="vazio">Ninguém assinou ainda.</div>' : `
+        <table class="lista"><thead><tr><th>Nome</th><th class="esconde">Função</th><th>Assinado em</th><th>Código</th></tr></thead><tbody>
+        ${ps.map(p => `<tr><td><b>${esc(p.nome)}</b></td><td class="esconde">${esc(p.funcao)}</td><td>${esc(quando(p.assinado_em))}</td>
+          <td class="st-mono">${esc(p.codigo_conf)}</td></tr>`).join('')}</tbody></table>`;
+    }
+  }
+
+  /* Cobrança uma pessoa por vez: o navegador não deixa abrir vários WhatsApp de uma vez.
+     A aba abre antes da chamada ao banco para não ser bloqueada. */
+  function cobrar(codigos) {
+    let i = 0;
+    const d = document.createElement('dialog'); d.className = 'st-modal'; document.body.appendChild(d);
+    const fim = () => { d.close(); d.remove(); carregar(); };
+    d.addEventListener('cancel', ev => { ev.preventDefault(); fim(); });
+    const tela = () => {
+      if (i >= codigos.length) { d.querySelector('.st-modal-in').innerHTML = `<h2>Cobrança feita</h2>
+        <p>${codigos.length} mensagem(ns) preparada(s).</p><div class="st-modal-acts"><button class="st-btn" id="cb-fim">Fechar</button></div>`;
+        d.querySelector('#cb-fim').onclick = fim; return; }
+      const p = P.pessoas.find(x => x.codigo === codigos[i]);
+      d.innerHTML = `<div class="st-modal-in"><h2>${codigos.length > 1 ? `${i + 1} de ${codigos.length}: ` : ''}${esc(p.nome)}</h2>
+        <p>${p.tem_whatsapp ? 'Abre o WhatsApp com a mensagem pronta. Depois é só tocar em enviar.' : 'Esta pessoa não tem WhatsApp cadastrado. Copie a mensagem e mande por outro caminho.'}</p>
+        <div id="cb-err"></div>
+        <div class="st-modal-acts"><button class="st-btn" data-tom="quieto" id="cb-parar">Parar</button>
+          ${codigos.length > 1 ? '<button class="st-btn" data-tom="quieto" id="cb-pular">Pular</button>' : ''}
+          <button class="st-btn" id="cb-ir">${p.tem_whatsapp ? 'Abrir WhatsApp' : 'Copiar mensagem'}</button></div></div>`;
+      d.querySelector('#cb-parar').onclick = fim;
+      const pular = d.querySelector('#cb-pular'); if (pular) pular.onclick = () => { i++; tela(); };
+      d.querySelector('#cb-ir').onclick = async () => {
+        const janela = p.tem_whatsapp ? window.open('', '_blank') : null;
+        const { data, error } = await rpc('rh_ponto_cobrar', { p_competencia: P.competencia, p_codigo: p.codigo });
+        if (error) { if (janela) janela.close(); d.querySelector('#cb-err').innerHTML = `<div class="st-impact">${esc(frase(error))}</div>`; return; }
+        if (janela) janela.location.href = `https://wa.me/${wa(data.whatsapp)}?text=${encodeURIComponent(data.mensagem)}`;
+        else { try { await navigator.clipboard.writeText(data.mensagem); toast('Mensagem copiada.', 'ok'); } catch (e) { toast('Não deu para copiar.', 'erro'); } }
+        i++; tela();
+      };
+    };
+    d.innerHTML = '<div class="st-modal-in"></div>'; d.showModal(); tela();
+  }
+
+  // Resposta à discordância: o texto aparece para a pessoa no portal, junto com o espelho para assinar de novo.
+  function responder(cod, acao) {
+    const p = P.pessoas.find(x => x.codigo === cod);
+    const d = document.createElement('dialog'); d.className = 'st-modal'; document.body.appendChild(d);
+    d.innerHTML = `<div class="st-modal-in"><h2>${acao === 'corrigido' ? 'Espelho corrigido' : 'Manter o espelho'}: ${esc(p.nome)}</h2>
+      <p>${acao === 'corrigido'
+        ? 'Corrija no programa do relógio e mande a página nova. A pessoa recebe a versão corrigida para assinar.'
+        : 'O espelho continua igual. Explique à pessoa por que está certo; ela lê no portal e assina.'}</p>
+      ${acao === 'corrigido' ? `<div class="st-field"><label for="r-arq">Página corrigida (PDF)</label><input type="file" id="r-arq" accept="application/pdf"></div>` : ''}
+      <div class="st-field"><label for="r-txt">Mensagem para a pessoa</label><textarea id="r-txt" style="padding:10px;min-height:90px"
+        placeholder="${acao === 'corrigido' ? 'Ex.: Corrigimos os dias 03 e 04 para 18h30.' : 'Ex.: No dia 03 a hora extra não foi autorizada pelo supervisor.'}"></textarea></div>
+      <div id="r-err"></div>
+      <div class="st-modal-acts"><button class="st-btn" data-tom="quieto" id="r-nao">Cancelar</button>
+        <button class="st-btn" id="r-sim">Enviar para a pessoa</button></div></div>`;
+    const fim = () => { d.close(); d.remove(); };
+    d.querySelector('#r-nao').onclick = fim;
+    d.querySelector('#r-sim').onclick = async () => {
+      const { error } = await rpc('rh_ponto_responder', { p_competencia: P.competencia, p_codigo: cod, p_acao: acao,
+        p_resposta: d.querySelector('#r-txt').value });
+      if (error) { d.querySelector('#r-err').innerHTML = `<div class="st-impact">${esc(frase(error))}</div>`; return; }
+      fim(); toast('Enviado. Cobre a pessoa para ela assinar a nova versão.', 'ok'); aba = 'pendente'; await competencias(); carregar();
+    };
+    d.showModal();
+  }
+
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.aba) { aba = b.dataset.aba; pintar(); }
+    else if (b.dataset.cobrar) cobrar([b.dataset.cobrar]);
+    else if (b.id === 'cobrar-todos') cobrar(P.pessoas.filter(p => p.situacao === 'pendente').map(p => p.codigo));
+    else if (b.dataset.resp) responder(b.dataset.cod, b.dataset.resp);
+    else if (b.dataset.vinc) {
+      const cod = document.getElementById('v' + b.dataset.vinc).value;
+      if (!cod) { toast('Escolha a pessoa antes de vincular.', 'erro'); return; }
+      const { error } = await rpc('rh_ponto_vincular', { p_competencia: P.competencia, p_pagina: +b.dataset.vinc, p_codigo: cod });
+      if (error) { toast(frase(error), 'erro'); return; }
+      toast('Página vinculada. A pessoa já pode assinar.', 'ok'); carregar();
+    }
+    else if (b.id === 'importar') {
+      const arq = document.getElementById('arq').files[0];
+      const err = document.getElementById('imp-err');
+      if (!arq) { err.innerHTML = '<div class="st-impact">Escolha o PDF do espelho.</div>'; return; }
+      b.disabled = true; b.textContent = 'Lendo o PDF e separando...';
+      const { data, error } = await rpc('rh_ponto_importar', { p_competencia: P.competencia, p_prazo: document.getElementById('prazo').value, p_arquivo: arq.name });
+      b.disabled = false; b.textContent = 'Importar e separar por pessoa';
+      if (error) { err.innerHTML = `<div class="st-impact">${esc(frase(error))}</div>`; return; }
+      toast(`${data.paginas} páginas lidas: ${data.casadas} com dono, ${data.sem_dono} sem dono.`, 'ok');
+      aba = data.sem_dono ? 'sem_dono' : 'pendente'; await competencias(); carregar();
+    }
+    else if (b.id === 'demo-avancar') { await rpc('demo_ponto_avancar', { p_competencia: P.competencia }); await competencias(); carregar(); }
+  });
+  selComp.addEventListener('change', () => { aba = 'pendente'; carregar(); });
+
+  if (await competencias()) carregar();
+})();
+</script>
+</body>
+</html>

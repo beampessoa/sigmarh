@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>SIGMA · Gestão Corporativa de Pessoas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EEF1F6;--surface:#FFFFFF;--surface-2:#F6F8FB;--ink:#0F1A2B;--ink-2:#46536A;--muted:#6B778C;--line:#DDE3EC;--line-2:#EEF1F6;
+  --nav:#0E1A2E;--nav-2:#16243C;--nav-ink:#B9C4D6;--brand:#0F4CBA;--brand-ink:#FFFFFF;
+  --series:#2a78d6;--series-soft:#cde2fb;--track:#E7ECF3;
+  --good:#0ca30c;--good-ink:#11690f;--good-bg:#EAF7EA;--warn:#fab219;--warn-ink:#8A5A00;--warn-bg:#FFF6E0;
+  --crit:#d03b3b;--crit-ink:#A12A2A;--crit-bg:#FCECEC;
+  --real:#0E1A2E;--real-ink:#FFFFFF;--demo:#5B47C9;--demo-bg:#F1EEFD;--plan:#6B778C;
+  --font-d:'Exo 2',system-ui,sans-serif;--font:'Inter',system-ui,sans-serif;
+  --sh:0 1px 2px rgba(15,26,43,.05),0 2px 6px rgba(15,26,43,.05);--r:14px;
+  color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C121C;--surface:#141C29;--surface-2:#1A2333;--ink:#E8EDF5;--ink-2:#B3BDCC;--muted:#8B96A8;--line:#283346;--line-2:#1E2838;
+  --nav:#080D16;--nav-2:#111A28;--nav-ink:#9AA6B9;--brand:#3B78E7;--series:#3987e5;--series-soft:#1c3558;--track:#223047;
+  --good-ink:#6BD56B;--good-bg:#12301A;--warn-ink:#F7C55A;--warn-bg:#33270C;--crit-ink:#F08A8A;--crit-bg:#3A1A1C;
+  --real:#E8EDF5;--real-ink:#0C121C;--demo:#A99CF2;--demo-bg:#231E42;--plan:#8B96A8;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C121C;--surface:#141C29;--surface-2:#1A2333;--ink:#E8EDF5;--ink-2:#B3BDCC;--muted:#8B96A8;--line:#283346;--line-2:#1E2838;
+  --nav:#080D16;--nav-2:#111A28;--nav-ink:#9AA6B9;--brand:#3B78E7;--series:#3987e5;--series-soft:#1c3558;--track:#223047;
+  --good-ink:#6BD56B;--good-bg:#12301A;--warn-ink:#F7C55A;--warn-bg:#33270C;--crit-ink:#F08A8A;--crit-bg:#3A1A1C;
+  --real:#E8EDF5;--real-ink:#0C121C;--demo:#A99CF2;--demo-bg:#231E42;--plan:#8B96A8;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:400 14.5px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+a{color:inherit}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+/* navegação */
+.nav{background:linear-gradient(180deg,var(--nav),var(--nav-2));color:var(--nav-ink);padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.marca{display:flex;align-items:center;gap:10px;padding:2px 8px 18px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:12px}
+.marca i{width:36px;height:36px;border-radius:10px;background:#0F4CBA;color:#fff;display:grid;place-items:center;font:800 21px var(--font-d);font-style:normal}
+.marca b{display:block;font:700 15px var(--font-d);color:#fff;letter-spacing:.04em}
+.marca span{font-size:11.5px}
+.nav a,.nav span.it{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:9px;text-decoration:none;font-size:13.5px;font-weight:500}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a[aria-current="page"]{background:rgba(59,120,231,.28);color:#fff}
+.nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;flex:none}
+.nav span.it{opacity:.5}
+.nav small{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.06em;border:1px solid currentColor;border-radius:4px;padding:1px 5px}
+.nav .grp{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5E6B82;margin:16px 10px 4px}
+.nav .rod{margin:22px 10px 0;font-size:11px;line-height:1.5;color:#5E6B82}
+/* conteúdo */
+main{min-width:0;padding:22px 28px 60px;max-width:1440px}
+.topo{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.topo h1{font:700 26px/1.15 var(--font-d);letter-spacing:.01em}
+.topo h1 b{color:var(--brand)}
+.topo p{color:var(--ink-2);margin-top:4px}
+.ctx{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.ctx b{color:var(--ink-2);font-weight:600}
+.selo{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed var(--demo);color:var(--demo);background:var(--demo-bg);
+  border-radius:10px;padding:8px 12px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.legenda-origem{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-top:8px;justify-content:flex-end}
+.tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;border-radius:5px;
+  padding:2px 6px;line-height:1.4;white-space:nowrap;vertical-align:middle}
+.tag.real{background:var(--real);color:var(--real-ink)}
+.tag.demo{border:1px dashed var(--demo);color:var(--demo);background:var(--demo-bg)}
+.tag.plan{border:1px solid var(--plan);color:var(--plan)}
+.tag.misto{border:1px solid var(--ink-2);color:var(--ink-2)}
+/* filtros */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:6px;position:sticky;top:0;z-index:20;box-shadow:var(--sh)}
+.filtros label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.filtros select{min-height:42px;min-width:170px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);padding:0 10px;font-size:14px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.filtros .limpar{min-height:42px;padding:0 14px;border:1px solid var(--line);background:transparent;border-radius:9px;cursor:pointer;font-weight:600;color:var(--ink-2)}
+.aviso-filtro{font-size:12.5px;color:var(--muted);margin:0 2px 18px;min-height:18px}
+/* seções */
+section{margin-bottom:26px}
+.sec-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sec-h h2{font:700 18px var(--font-d)}
+.sec-h .num{font:700 12px var(--font);color:var(--brand);letter-spacing:.08em}
+.sec-h p{flex-basis:100%;color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);min-width:0}
+.card h3{font:600 14px var(--font);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+.card .sub{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.g{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-73{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+/* KPIs */
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+#kpis-real{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;gap:2px;min-height:118px;transition:border-color .15s}
+.kpi:hover,.kpi:focus-visible{border-color:var(--brand);outline:none}
+.kpi .rot{display:flex;flex-direction:column-reverse;gap:6px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--muted)}
+.kpi .v{font:700 30px/1.1 var(--font-d);font-variant-numeric:tabular-nums;margin-top:6px}
+.kpi .v small{font:600 14px var(--font);color:var(--muted);margin-left:4px}
+.kpi .d{font-size:12.5px;color:var(--ink-2)}
+.kpi .mini{height:6px;border-radius:99px;background:var(--track);margin-top:auto;overflow:hidden}
+.kpi .mini i{display:block;height:100%;background:var(--series);border-radius:99px}
+/* antes e depois */
+.troca{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.troca button{min-height:40px;padding:0 16px;border:0;background:var(--surface);cursor:pointer;font-weight:600;color:var(--ink-2)}
+.troca button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.cena{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,4fr);gap:18px;align-items:center}
+.planilhas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.pl{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px;font-size:11px;color:var(--muted);min-height:64px;position:relative}
+.pl b{display:block;font-size:12px;color:var(--ink-2)}
+.pl.velha{border-color:var(--warn);}
+.pl.velha::after{content:"desatualizada";display:block;margin-top:2px;font-size:10px;color:var(--warn-ink);font-weight:700}
+.pl.sigma{background:var(--series-soft);border-color:var(--series)}
+.pl.sigma b{color:var(--ink)}
+.cena ul{list-style:none;display:grid;gap:8px}
+.cena li{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.cena li::before{content:"";width:8px;height:8px;border-radius:50%;margin-top:7px;flex:none;background:var(--crit)}
+.cena.depois li::before{background:var(--good)}
+/* tabela de contratos */
+.tabela{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.tabela th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tabela td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.tabela tbody tr{cursor:pointer}
+.tabela tbody tr:hover td{background:var(--surface-2)}
+.tabela tr.sel td{background:var(--series-soft)}
+.tabela td.n{text-align:right}
+.barra-c{display:flex;align-items:center;gap:8px;min-width:150px}
+.barra-c i{display:block;height:10px;border-radius:0 4px 4px 0;background:var(--series)}
+.fonte{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;white-space:nowrap}
+.fonte::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+.fonte.planilha::before{background:var(--warn)}
+.fonte.old::before{background:var(--crit)}
+.rolagem{overflow-x:auto}
+/* gráficos */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font:500 11.5px var(--font)}
+.chart .vl{fill:var(--ink);font-weight:600;font-size:12px}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .mk{fill:var(--series);transition:opacity .12s}
+.chart .mk.dest{fill:var(--warn)}
+.chart .tr{fill:var(--track)}
+.chart .hit{fill:transparent;cursor:default}
+.chart .hit:hover+.mk,.chart g:hover .mk{opacity:.8}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);border-radius:8px;padding:8px 10px;font-size:12.5px;z-index:60;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:260px;display:none}
+.tip b{display:block;font-size:15px}
+.ver-tab{margin-top:8px;background:none;border:0;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer;min-height:32px;padding:0}
+.tab-dados{margin-top:8px;display:none}
+.tab-dados.on{display:block}
+/* funil */
+.funil{display:grid;gap:8px}
+.et{display:grid;grid-template-columns:200px minmax(0,1fr) 110px;gap:12px;align-items:center;font-size:13.5px}
+.et .nm{font-weight:600}
+.et .tr2{height:26px;background:var(--track);border-radius:0 6px 6px 0;position:relative}
+.et .tr2 i{position:absolute;inset:0 auto 0 0;background:var(--series);border-radius:0 6px 6px 0}
+.et .tr2 span{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-weight:700;font-size:12.5px;color:#fff}
+.et.gargalo .tr2 i{background:var(--warn)}
+.et.gargalo .tr2 span{color:#3a2600}
+.et .dias{font-size:12.5px;color:var(--ink-2);text-align:right}
+.et.gargalo .dias{color:var(--warn-ink);font-weight:700}
+.callout{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-top:12px}
+.callout.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.callout.info{background:var(--surface-2);color:var(--ink-2)}
+.callout svg{width:18px;height:18px;flex:none;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2}
+.movs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.movs div{background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.movs b{display:block;font:700 22px var(--font-d)}
+.movs span{font-size:12px;color:var(--muted)}
+/* pendências */
+.pend{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--surface)}
+.pend summary{list-style:none;display:grid;grid-template-columns:110px minmax(0,1fr) 70px 150px 140px;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;min-height:56px}
+.pend summary::-webkit-details-marker{display:none}
+.pend .tp{font-weight:600}
+.pend .ct{font-size:12.5px;color:var(--muted)}
+.pend .q{font:700 18px var(--font-d);text-align:right}
+.est{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.est svg{width:14px;height:14px}
+.est.atrasada{color:var(--crit-ink)}.est.aberta{color:var(--warn-ink)}.est.no_prazo{color:var(--good-ink)}.est.planejado{color:var(--plan)}
+.pend .corpo{padding:0 14px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;font-size:13.5px;border-top:1px solid var(--line-2);padding-top:12px}
+.pend .corpo span{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+/* insights */
+.ins{border-left:3px solid var(--brand);background:var(--surface);border-radius:0 12px 12px 0;padding:14px 16px;box-shadow:var(--sh)}
+.ins h4{font-size:14.5px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.ins dl{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;font-size:13px}
+.ins dt{color:var(--muted);font-weight:600}
+.ins.demo{border-left-color:var(--demo)}
+/* simulador */
+.sim{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,5fr);gap:18px;align-items:start}
+.sim label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;margin-bottom:12px}
+.sim input[type=number]{min-height:44px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);padding:0 12px;font-size:16px;max-width:200px;font-variant-numeric:tabular-nums}
+.sim input[type=range]{width:100%;accent-color:var(--brand);min-height:32px}
+.res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.res div{background:var(--surface-2);border-radius:12px;padding:14px}
+.res b{display:block;font:700 30px/1.1 var(--font-d);font-variant-numeric:tabular-nums}
+.res span{font-size:12.5px;color:var(--muted)}
+.res .dest{background:var(--series-soft)}
+.hip{font-size:12.5px;color:var(--muted);margin-top:10px}
+.medidas{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+.medidas td{padding:8px 10px;border-bottom:1px solid var(--line-2)}
+.medidas td:first-child{font-weight:600;white-space:nowrap}
+/* caminho */
+.passos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;counter-reset:p}
+.passos div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
+.passos div.agora{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.passos b{display:block;font:700 15px var(--font-d);margin-bottom:4px}
+.passos span{font-size:13px;color:var(--ink-2)}
+.passos em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--brand)}
+.planej{list-style:none;display:grid;gap:6px;font-size:13.5px}
+.planej li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line-2);padding:7px 0}
+.planej li span{color:var(--muted);font-size:12.5px;text-align:right}
+/* janela de detalhe */
+dialog.det{border:0;border-radius:16px;padding:0;width:min(560px,calc(100vw - 32px));margin:auto;background:var(--surface);color:var(--ink)}
+dialog.det::backdrop{background:rgba(8,13,22,.55)}
+.det .in{padding:22px}
+.det h2{font:700 19px var(--font-d);margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.det p{color:var(--ink-2);margin-bottom:10px;font-size:14px}
+.det .fon{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.det button{min-height:44px;padding:0 18px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer;margin-top:12px}
+.rodape{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin-top:10px}
+.burger{display:none}
+@media (max-width:1100px){.g3{grid-template-columns:1fr 1fr}.g-73,.cena,.sim{grid-template-columns:1fr}.passos{grid-template-columns:1fr 1fr}
+  .pend summary{grid-template-columns:90px minmax(0,1fr) 60px 130px}.pend summary .ct2{display:none}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .nav{position:fixed;inset:0 auto 0 0;width:250px;z-index:50;transform:translateX(-100%);transition:transform .2s}
+  .nav[data-aberto="1"]{transform:none}
+  .burger{display:inline-grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer}
+  main{padding:14px 16px 60px}
+  .g2,.g3{grid-template-columns:1fr}
+  .planilhas{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .et{grid-template-columns:1fr 70px}.et .nm{grid-column:1 / -1}
+  .pend summary{grid-template-columns:minmax(0,1fr) 54px}.pend summary .est,.pend summary .ct2,.pend summary .ct0{display:none}
+  .pend .corpo{grid-template-columns:1fr}
+  .res{grid-template-columns:1fr}
+  .movs div{min-width:0;padding:8px}.movs b{font-size:18px}.movs span{font-size:11px}
+  .et .tr2{min-width:0}
+  .passos{grid-template-columns:1fr}
+  .filtros{position:static}.filtros select{min-width:0;width:100%}.filtros label{flex:1 1 140px}
+  .ins dl{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav" aria-label="Menu" data-aberto="0">
+    <div class="marca"><i>&Sigma;</i><div><b>SIGMA</b><span>Sigmacode Engenharia</span></div></div>
+    <a href="executivo.html" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg>Visão Executiva</a>
+    <a href="shell.html?demo=1"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>SIGMA RH</a>
+    <a href="#capacitacao"><svg viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg>Treinamentos e Aptidão</a>
+    <a href="#pendencias"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Pendências</a>
+    <a href="aprovacao.html?demo=1"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Requisições e Aprovações</a>
+    <span class="it"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5"/></svg>Relatórios<small>planejado</small></span>
+    <div class="grp">Demonstração</div>
+    <a href="portal.html?k=demo&amp;demo=1"><svg viewBox="0 0 24 24"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2"/></svg>Portal do colaborador</a>
+    <a href="demonstrativo.html"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM10 8l6 4-6 4z"/></svg>Roteiro da demonstração</a>
+    <div class="rod">Plataforma única, segregada por contrato e com permissão por perfil.</div>
+  </nav>
+
+  <main>
+    <div class="topo">
+      <div>
+        <button class="burger" id="burger" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <h1><b>SIGMA</b> | Gestão Corporativa de Pessoas</h1>
+        <p>Mobilização, capacitação e aptidão operacional dos 11 contratos em uma única visão.</p>
+        <div class="ctx"><span>Contrato com dados reais: <b>REDUC, manutenção industrial (GCB, fiscalização Petrobras)</b></span>
+          <span>Referência: <b id="ref-data"></b></span><span>Dados reais medidos em <b id="ref-medido"></b> (leitura do banco, sem sincronização automática)</span></div>
+      </div>
+      <div>
+        <div class="selo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v4M12 16h.01"/></svg>Modo demonstração</div>
+        <div class="legenda-origem"><span class="tag real">Real</span>existe no sistema <span class="tag demo">Demonstração</span>simulado <span class="tag plan">Planejado</span>ainda não existe</div>
+      </div>
+    </div>
+
+    <div class="filtros" role="search">
+      <label>Contrato<select id="f-contrato"></select></label>
+      <label>Período<select id="f-periodo"><option value="6">Últimos 6 meses</option><option value="3">Últimos 3 meses</option></select></label>
+      <label>Setor (função)<select id="f-setor"></select></label>
+      <label>Situação da pendência<select id="f-situacao">
+        <option value="">Todas</option><option value="atrasada">Atrasada</option><option value="aberta">Aberta</option>
+        <option value="no_prazo">No prazo</option><option value="planejado">Planejada</option></select></label>
+      <button class="limpar" id="f-limpar" type="button">Limpar filtros</button>
+    </div>
+    <p class="aviso-filtro" id="aviso-filtro"></p>
+
+    <!-- 0. Antes e depois -->
+    <section aria-labelledby="h-cena">
+      <div class="sec-h"><span class="num">01</span><h2 id="h-cena">Da planilha de cada contrato para uma visão da empresa</h2></div>
+      <div class="card">
+        <div class="troca" role="group" aria-label="Cenário"><button type="button" data-cena="hoje" aria-pressed="true">Como é hoje</button><button type="button" data-cena="sigma" aria-pressed="false">Com o SIGMA</button></div>
+        <div id="cena"></div>
+      </div>
+    </section>
+
+    <!-- 1. Visão consolidada -->
+    <section aria-labelledby="h-cons">
+      <div class="sec-h"><span class="num">02</span><h2 id="h-cons">Visão consolidada dos contratos</h2>
+        <p>Toque num contrato da tabela para filtrar o painel inteiro por ele.</p></div>
+      <div class="kpis" id="kpis-cons"></div>
+      <div class="card" style="margin-top:14px">
+        <h3>Pessoas por contrato e de onde vem o dado <span class="tag misto">Real + demonstração</span></h3>
+        <div class="sub">REDUC com números reais do Sigma Treinamentos. Contratos B a K são fictícios e simulam quem ainda envia planilha.</div>
+        <div class="rolagem"><table class="tabela" id="tab-contratos"></table></div>
+      </div>
+    </section>
+
+    <!-- 2. Jornada -->
+    <section aria-labelledby="h-jor">
+      <div class="sec-h"><span class="num">03</span><h2 id="h-jor">Jornada da mão de obra</h2>
+        <p>Onde cada contratação está e quanto tempo fica parada em cada etapa.</p></div>
+      <div class="g g-73">
+        <div class="card"><h3>Pessoas por etapa <span class="tag demo">Demonstração</span></h3>
+          <div class="sub" id="jor-sub"></div><div class="funil" id="funil"></div><div id="jor-call"></div></div>
+        <div class="card"><h3>Movimentações do mês <span class="tag demo">Demonstração</span></h3>
+          <div class="sub">Depende do vínculo de contrato (mt24). Hoje as 198 pessoas da REDUC estão como candidatas.</div>
+          <div class="movs" id="movs"></div>
+          <h3 style="margin-top:18px">Efetivo mobilizado por mês <span class="tag demo">Demonstração</span></h3>
+          <div class="sub">Contratos fictícios somados. A REDUC entra quando o vínculo existir.</div>
+          <div class="chart" id="ch-efetivo"></div></div>
+      </div>
+    </section>
+
+    <!-- 3. Capacitação real -->
+    <section aria-labelledby="h-cap" id="capacitacao">
+      <div class="sec-h"><span class="num">04</span><h2 id="h-cap">Conformidade e capacitação</h2><span class="tag real">Real · REDUC</span>
+        <p id="cap-p">Números do Sigma Treinamentos em produção. Toque num indicador para ver o que ele mede e de onde vem.</p></div>
+      <div class="kpis" id="kpis-real"></div>
+      <div class="g g2" style="margin-top:14px">
+        <div class="card"><h3>Aptidão no escopo da função <span class="tag real">Real</span></h3>
+          <div class="sub" id="apt-sub"></div><div class="chart" id="ch-apt"></div>
+          <div class="callout info"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01"/></svg>
+            <span>Apto no escopo é a regra do sistema (todos os treinamentos exigidos pela matriz da função liberados). Ter selo não significa estar apto para qualquer atividade.</span></div></div>
+        <div class="card"><h3>Selos emitidos por semana <span class="tag real">Real</span></h3>
+          <div class="sub">692 selos desde 24/08, nenhum revogado. Semanas de segunda a domingo.</div>
+          <div class="chart" id="ch-selos"></div><button class="ver-tab" data-tab="t-selos">Ver em tabela</button><div class="tab-dados" id="t-selos"></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>Aderência à matriz por função <span class="tag real">Real</span></h3>
+        <div class="sub" id="ader-sub"></div><div class="chart" id="ch-ader"></div>
+        <button class="ver-tab" data-tab="t-ader">Ver todas as funções em tabela</button><div class="tab-dados" id="t-ader"></div></div>
+    </section>
+
+    <!-- 4. Pendências -->
+    <section aria-labelledby="h-pend" id="pendencias">
+      <div class="sec-h"><span class="num">05</span><h2 id="h-pend">Pendências que travam a operação</h2>
+        <p>Gargalos de processo, com o papel responsável e a próxima ação. Não é ranking de pessoas.</p></div>
+      <div id="lista-pend"></div>
+    </section>
+
+    <!-- 5. Insights -->
+    <section aria-labelledby="h-ins">
+      <div class="sec-h"><span class="num">06</span><h2 id="h-ins">SIGMA Insights</h2>
+        <p>Leituras geradas a partir dos dados. Os marcados como reais são sustentados pelo banco; os demonstrativos mostram o tipo de alerta que o painel dará.</p></div>
+      <div class="g g2" id="insights"></div>
+    </section>
+
+    <!-- 6. Visão da mão de obra -->
+    <section aria-labelledby="h-mo">
+      <div class="sec-h"><span class="num">07</span><h2 id="h-mo">Visão da mão de obra</h2></div>
+      <div class="g g3">
+        <div class="card"><h3>Pessoas por setor <span class="tag real">Real · REDUC</span></h3><div class="sub">Pela função cadastrada.</div><div class="chart" id="ch-setor"></div></div>
+        <div class="card"><h3>Situação de cadastro e mobilização</h3><div class="sub">O que o banco sabe hoje e o que depende do Sigma RH.</div><div id="sit-cad"></div></div>
+        <div class="card"><h3>Almoxarifado e EPI</h3><div class="sub">Próxima integração: o que cada pessoa retirou.</div><div id="almox"></div></div>
+      </div>
+    </section>
+
+    <!-- 7. Retorno -->
+    <section aria-labelledby="h-ret">
+      <div class="sec-h"><span class="num">08</span><h2 id="h-ret">Eficiência e retorno</h2><span class="tag demo">Hipótese editável</span>
+        <p>Simule com os seus números. Nada aqui é resultado medido: o piloto mede.</p></div>
+      <div class="card sim">
+        <div>
+          <label>Contratos<input type="number" id="s-contratos" min="1" max="50" value="11"></label>
+          <label>Horas por semana que cada contrato gasta consolidando planilhas<input type="number" id="s-horas" min="0" max="80" step="0.5" value="4"></label>
+          <label>Redução esperada com o processo padronizado: <span id="s-red-v">50%</span><input type="range" id="s-red" min="0" max="90" step="5" value="50"></label>
+        </div>
+        <div>
+          <div class="res"><div><b id="r-atual"></b><span>horas por semana hoje</span></div>
+            <div class="dest"><b id="r-lib"></b><span>horas liberadas por semana</span></div>
+            <div><b id="r-mes"></b><span>horas liberadas por mês (4,33 semanas)</span></div></div>
+          <p class="hip" id="r-txt"></p>
+          <h3 style="margin-top:16px">Como o piloto prova o ganho</h3>
+          <table class="medidas" id="medidas"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Caminho -->
+    <section aria-labelledby="h-cam">
+      <div class="sec-h"><span class="num">09</span><h2 id="h-cam">Caminho de implantação</h2></div>
+      <div class="passos">
+        <div class="agora"><em>Agora</em><b>Painel e fluxo de pessoas</b><span>Este painel, o fluxo de contratação em demonstração e o Sigma Treinamentos em produção na REDUC.</span></div>
+        <div><em>Piloto</em><b>Um contrato, medido</b><span>Medir o processo atual (horas, retrabalho, tempo de mobilização) e comparar depois de implantar.</span></div>
+        <div><em>Expansão</em><b>Os 11 contratos</b><span>Mesmo processo e mesmos indicadores, cada contrato vendo só o que é dele.</span></div>
+        <div><em>Maturidade</em><b>Planejamento</b><span>Planejamento de efetivo, histórico, integrações e previsão de demanda por função.</span></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>O que ainda não existe <span class="tag plan">Planejado</span></h3><ul class="planej" id="planej"></ul></div>
+    </section>
+
+    <p class="rodape">SIGMA · Sigmacode Engenharia. Dados reais: leitura do banco do Sigma Treinamentos em <span id="rod-medido"></span>, contrato REDUC.
+      Contratos B a K e todos os números marcados como demonstração são fictícios. Nenhum dado pessoal é exibido neste painel. <span id="versao"></span></p>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<dialog class="det" id="det"><div class="in"><h2 id="det-t"></h2><p id="det-p"></p><div class="fon" id="det-f"></div><button type="button" id="det-x">Fechar</button></div></dialog>
+
+<script src="executivo-dados.js"></script>
+<script>
+/* Painel executivo do SIGMA. Lê só executivo-dados.js: nenhuma chamada ao banco, nenhuma escrita.
+   Toda caixa de número carrega a origem (real, demonstração, planejado). */
+const VERSAO = '2026-10-12 · executivo · demonstração';
+(() => {
+  const D = window.SIGMA_EXEC, R = D.REAL;
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const nf = n => Number(n).toLocaleString('pt-BR');
+  const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+  const TAG = { real: '<span class="tag real">Real</span>', demo: '<span class="tag demo">Demonstração</span>',
+    plan: '<span class="tag plan">Planejado</span>', misto: '<span class="tag misto">Real + demonstração</span>' };
+  const F = { contrato: '', periodo: 6, setor: '', situacao: '' };
+
+  $('#ref-data').textContent = new Date().toLocaleDateString('pt-BR');
+  $('#ref-medido').textContent = R.medido_em; $('#rod-medido').textContent = R.medido_em; $('#versao').textContent = 'Versão ' + VERSAO + '.';
+
+  /* tooltip único: valor primeiro, rótulo depois; conteúdo por textContent */
+  const tip = $('#tip');
+  function dica(ev, valor, rotulo) {
+    tip.replaceChildren(); const b = document.createElement('b'); b.textContent = valor; tip.append(b, document.createTextNode(rotulo));
+    tip.style.display = 'block';
+    const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8), y = Math.max(8, ev.clientY - tip.offsetHeight - 10);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  document.addEventListener('pointerover', ev => { const t = ev.target.closest('[data-v]'); if (!t) return; dica(ev, t.dataset.v, t.dataset.l); });
+  document.addEventListener('pointermove', ev => { const t = ev.target.closest('[data-v]'); if (t) dica(ev, t.dataset.v, t.dataset.l); else tip.style.display = 'none'; });
+  document.addEventListener('focusin', ev => { const t = ev.target.closest('[data-v]'); if (!t) return; const r = t.getBoundingClientRect(); dica({ clientX: r.left, clientY: r.top }, t.dataset.v, t.dataset.l); });
+  document.addEventListener('focusout', () => tip.style.display = 'none');
+
+  /* gráfico de barras verticais (uma série) */
+  function barrasV(el, dados, { destaque = -1, unidade = '' } = {}) {
+    const W = 560, H = 210, pl = 34, pb = 26, pt = 18, max = Math.max(...dados.map(d => d[1]), 1);
+    const passo = (W - pl) / dados.length, bw = Math.min(46, passo * .62);
+    const teto = Math.ceil(max / 100) * 100 || max, y = v => pt + (H - pt - pb) * (1 - v / teto);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(el.dataset.titulo || '')}">`;
+    [0, .5, 1].forEach(f => { const v = Math.round(teto * f), yy = y(v);
+      s += `<line class="grid" x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}"/><text x="${pl - 6}" y="${yy + 4}" text-anchor="end">${nf(v)}</text>`; });
+    dados.forEach((d, i) => { const x = pl + passo * i + (passo - bw) / 2, yy = y(d[1]), h = H - pb - yy;
+      const r = Math.min(4, h / 2);
+      s += `<g tabindex="0" data-v="${esc(nf(d[1]) + unidade)}" data-l="${esc(d[0])}">
+        <rect class="hit" x="${pl + passo * i}" y="${pt}" width="${passo}" height="${H - pt - pb}"/>
+        ${h > 0 ? `<path class="mk${i === destaque ? ' dest' : ''}" d="M${x},${H - pb} V${yy + r} Q${x},${yy} ${x + r},${yy} H${x + bw - r} Q${x + bw},${yy} ${x + bw},${yy + r} V${H - pb} Z"/>` : ''}
+        <text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(d[0])}</text>
+        ${d[1] === max || i === dados.length - 1 ? `<text class="vl" x="${x + bw / 2}" y="${yy - 6}" text-anchor="middle">${nf(d[1])}</text>` : ''}</g>`; });
+    el.innerHTML = s + '</svg>';
+  }
+  /* barras horizontais com trilho (valor e total) */
+  function barrasH(el, linhas) {
+    el.innerHTML = linhas.map(l => `<div tabindex="0" data-v="${esc(l.valor)}" data-l="${esc(l.dica)}"
+      style="display:grid;grid-template-columns:minmax(120px,210px) minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:13px;padding:5px 0">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.nome)}</span>
+      <span style="height:14px;background:var(--track);border-radius:0 4px 4px 0;position:relative">
+        <i style="position:absolute;inset:0 auto 0 0;width:${Math.max(0, Math.min(100, l.pct))}%;background:var(--series);border-radius:0 4px 4px 0"></i></span>
+      <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${esc(l.direita)}</span></div>`).join('');
+  }
+
+  /* ── 01 antes e depois ── */
+  function cena(qual) {
+    document.querySelectorAll('[data-cena]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cena === qual)));
+    const cs = D.CONTRATOS_DEMO;
+    if (qual === 'hoje') {
+      $('#cena').innerHTML = `<div class="cena"><div class="planilhas">
+        <div class="pl"><b>REDUC</b>planilha do RH</div>
+        ${cs.map(c => `<div class="pl${c.atualizado_dias > 10 ? ' velha' : ''}"><b>${esc(c.nome)}</b>${c.atualizado_dias} dias atrás</div>`).join('')}
+        <div class="pl" style="border-style:dashed"><b>Diretoria</b>junta tudo à mão</div></div>
+        <ul><li>Cada contrato com seu formato, sua data e seu responsável.</li><li>Consolidar é copiar e colar 11 arquivos, toda semana.</li>
+          <li>Números divergentes entre planilhas e retrabalho para conferir.</li><li>A informação chega à diretoria dias depois do fato.</li></ul></div>
+        <p class="hip">Ilustração do cenário atual. As datas de atualização dos contratos B a K são fictícias. <span class="tag demo">Demonstração</span></p>`;
+    } else {
+      $('#cena').innerHTML = `<div class="cena depois"><div class="planilhas">
+        <div class="pl sigma"><b>REDUC</b>no SIGMA</div>
+        ${cs.map(c => `<div class="pl sigma"><b>${esc(c.nome)}</b>no SIGMA</div>`).join('')}
+        <div class="pl sigma" style="border-style:solid"><b>Diretoria</b>vê o consolidado</div></div>
+        <ul><li>Uma base, um processo e os mesmos indicadores em todos os contratos.</li><li>Cada contrato vê o que é dele; a diretoria vê a empresa.</li>
+          <li>Toda movimentação com data, responsável e histórico.</li><li>O dado aparece quando acontece, sem consolidação manual.</li></ul></div>
+        <p class="hip">Hoje só a REDUC usa o SIGMA, e só no módulo de treinamentos. Os outros contratos são a proposta. <span class="tag plan">Planejado</span></p>`;
+    }
+  }
+
+  /* ── 02 consolidado ── */
+  function contratosFiltrados() { return F.contrato && F.contrato !== 'REDUC' ? D.CONTRATOS_DEMO.filter(c => c.id === F.contrato) : (F.contrato === 'REDUC' ? [] : D.CONTRATOS_DEMO); }
+  function consolidado() {
+    const cs = contratosFiltrados(), comReduc = !F.contrato || F.contrato === 'REDUC';
+    const cadDemo = cs.reduce((s, c) => s + c.cadastrados, 0), mobDemo = cs.reduce((s, c) => s + c.mobilizados, 0);
+    const nContr = F.contrato ? 1 : 11;
+    const atrasados = cs.filter(c => c.atualizado_dias > 10).length;
+    const k = [];
+    k.push({ id: 'contratos', rot: 'Contratos monitorados', tag: F.contrato ? (F.contrato === 'REDUC' ? 'real' : 'demo') : 'misto', v: nContr,
+      d: F.contrato ? 'filtro aplicado' : '1 real (REDUC) e 10 fictícios' });
+    k.push({ id: 'cadastrados', rot: 'Pessoas cadastradas', tag: comReduc && cs.length ? 'misto' : (comReduc ? 'real' : 'demo'),
+      v: (comReduc ? R.pessoas : 0) + cadDemo, d: comReduc && cs.length ? `${nf(R.pessoas)} reais na REDUC e ${nf(cadDemo)} de demonstração` : (comReduc ? 'todas como candidatas no banco' : 'contrato fictício') });
+    k.push({ id: 'mobilizados', rot: 'Mobilizadas no contrato', tag: cs.length ? 'demo' : 'plan',
+      v: cs.length ? mobDemo : null, d: comReduc ? 'REDUC sem número: o vínculo de contrato ainda não existe' : 'contrato fictício' });
+    const apt = comReduc ? [R.aptos_no_escopo, R.pessoas] : null;
+    k.push({ id: 'aptidao', rot: F.contrato && !comReduc ? 'Aptos no escopo (demonstração)' : 'Aptos no escopo, REDUC', tag: comReduc ? 'real' : 'demo',
+      v: comReduc ? pct(R.aptos_no_escopo, R.pessoas) : cs[0].aptos_pct, suf: '%', barra: comReduc ? pct(R.aptos_no_escopo, R.pessoas) : cs[0].aptos_pct,
+      d: comReduc ? `${R.aptos_no_escopo} de ${R.pessoas} pela matriz da função` : 'contrato fictício' });
+    k.push({ id: 'desatualizados', rot: 'Contratos com dado desatualizado', tag: cs.length ? 'demo' : 'real', v: atrasados,
+      d: cs.length ? 'planilha com mais de 10 dias' : 'REDUC lida direto do banco' });
+    $('#kpis-cons').innerHTML = k.map(kpi).join('');
+
+    const linhas = [];
+    if (!F.contrato || F.contrato === 'REDUC') linhas.push({ id: 'REDUC', nome: 'REDUC', cad: R.pessoas, mob: null, apt: pct(R.aptos_no_escopo, R.pessoas), docs: null,
+      fonte: '<span class="fonte">SIGMA, medido ' + esc(R.medido_em.slice(0, 5)) + '</span>', tag: TAG.real });
+    cs.forEach(c => linhas.push({ id: c.id, nome: c.nome, cad: c.cadastrados, mob: c.mobilizados, apt: c.aptos_pct, docs: c.docs_pendentes,
+      fonte: `<span class="fonte ${c.atualizado_dias > 10 ? 'old' : 'planilha'}">planilha, há ${c.atualizado_dias} dias</span>`, tag: TAG.demo }));
+    const maxCad = Math.max(...linhas.map(l => l.cad));
+    $('#tab-contratos').innerHTML = `<thead><tr><th>Contrato</th><th>Origem</th><th>Cadastradas</th><th class="n">Mobilizadas</th><th class="n">Aptos</th><th class="n">Docs pendentes</th><th>Fonte do dado</th></tr></thead><tbody>` +
+      linhas.map(l => `<tr data-contrato="${esc(l.id)}" class="${F.contrato === l.id ? 'sel' : ''}" tabindex="0">
+        <td><b>${esc(l.nome)}</b></td><td>${l.tag}</td>
+        <td><span class="barra-c" data-v="${nf(l.cad)} pessoas" data-l="${esc(l.nome)}"><i style="width:${Math.round(110 * l.cad / maxCad)}px"></i>${nf(l.cad)}</span></td>
+        <td class="n">${l.mob == null ? '<span class="tag plan">Planejado</span>' : nf(l.mob)}</td>
+        <td class="n">${l.apt}%</td><td class="n">${l.docs == null ? '<span class="tag plan">Planejado</span>' : nf(l.docs)}</td><td>${l.fonte}</td></tr>`).join('') + '</tbody>';
+  }
+  function kpi(k) {
+    const val = k.v == null ? '<span style="font-size:18px;color:var(--muted)">sem dado</span>' : nf(k.v) + (k.suf ? `<small>${k.suf}</small>` : '');
+    return `<button class="kpi" type="button" data-kpi="${esc(k.id)}" aria-label="${esc(k.rot)}: detalhes">
+      <span class="rot"><span>${esc(k.rot)}</span>${TAG[k.tag]}</span><span class="v">${val}</span><span class="d">${esc(k.d || '')}</span>
+      ${k.barra != null ? `<span class="mini"><i style="width:${k.barra}%"></i></span>` : ''}</button>`;
+  }
+
+  /* ── 03 jornada (demonstração) ── */
+  function jornada() {
+    const ids = F.contrato ? [F.contrato] : Object.keys(D.JORNADA_DEMO);
+    const soma = D.ETAPAS.map((_, i) => { let q = 0, dp = 0; ids.forEach(id => { const e = D.JORNADA_DEMO[id][i]; q += e[0]; dp += e[0] * e[1]; });
+      return [q, q ? dp / q : 0]; });
+    const max = Math.max(...soma.map(s => s[0]), 1), g = soma.reduce((m, s, i) => s[1] > soma[m][1] ? i : m, 0);
+    $('#jor-sub').textContent = (F.contrato ? 'Contrato ' + (F.contrato === 'REDUC' ? 'REDUC' : F.contrato) : 'Todos os contratos') + '. A barra é a quantidade de pessoas; à direita, dias médios parados na etapa.';
+    $('#funil').innerHTML = D.ETAPAS.map((nome, i) => `<div class="et${i === g ? ' gargalo' : ''}" tabindex="0" data-v="${soma[i][0]} pessoas" data-l="${esc(nome)}, ${soma[i][1].toFixed(1).replace('.', ',')} dias parados em média">
+      <span class="nm">${i + 1}. ${esc(nome)}</span><span class="tr2"><i style="width:${Math.max(8, 100 * soma[i][0] / max)}%"></i><span>${soma[i][0]}</span></span>
+      <span class="dias">${soma[i][1].toFixed(1).replace('.', ',')} dias${i === g ? ' ▲' : ''}</span></div>`).join('');
+    $('#jor-call').innerHTML = `<div class="callout warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <span><b>Gargalo: ${esc(D.ETAPAS[g])}.</b> ${soma[g][0]} pessoas paradas, ${soma[g][1].toFixed(1).replace('.', ',')} dias em média. Ação: conferir os documentos no dia em que chegam. <span class="tag demo">Demonstração</span></span></div>`;
+    const m = D.MOVIMENTOS_DEMO, f = F.contrato ? (F.contrato === 'REDUC' ? 0.12 : (D.CONTRATOS_DEMO.find(c => c.id === F.contrato).cadastrados / 1290)) : 1;
+    $('#movs').innerHTML = [['Mobilizações', m.mobilizacoes_mes], ['Desmobilizações', m.desmobilizacoes_mes], ['Remobilizações', m.remobilizacoes_mes]]
+      .map(([n, v]) => `<div><b>${Math.round(v * f)}</b><span>${n}</span></div>`).join('');
+    const serie = D.EFETIVO_MES_DEMO.slice(-F.periodo).map(([mes, v]) => [mes, Math.round(v * (F.contrato ? f : 1))]);
+    const el = $('#ch-efetivo'); el.dataset.titulo = 'Efetivo mobilizado por mês, demonstração'; barrasV(el, serie, { unidade: ' pessoas' });
+  }
+
+  /* ── 04 capacitação real ── */
+  const DET = {
+    pessoas: ['Pessoas cadastradas', 'real', `${R.pessoas} pessoas no cadastro do Sigma Treinamentos. Todas estão no estado "candidato": o vínculo de contrato (entrada e saída) ainda não foi implantado. Não são 198 colaboradores mobilizados.`],
+    pin: ['Pessoas com PIN', 'real', `${R.com_pin} de ${R.pessoas} têm PIN para assinar atividade de campo e treinamento. ${R.pessoas - R.com_pin} ainda não cadastraram.`],
+    selo: ['Pessoas com pelo menos um selo', 'real', `${R.com_selo} pessoas têm ao menos um selo válido. Ter selo não quer dizer estar apto: a aptidão exige todos os treinamentos da matriz da função.`],
+    selos: ['Selos de aptidão emitidos', 'real', `${R.selos} selos emitidos, ${R.selos_revogados} revogados. Cada selo tem código de conferência pública por QR.`],
+    treinamentos: ['Treinamentos disponíveis', 'real', `${R.treinamentos} treinamentos cadastrados e ativos, com vídeo, prova e validade.`],
+    funcoes: ['Funções com matriz', 'real', `${R.funcoes_com_matriz} funções com matriz de treinamentos. Registro de 12/09: ${R.funcoes_planilha_sem_cadastro.qtd} funções da planilha do RH ainda não existem no sistema (não medido hoje).`],
+    listas: ['Listas de presença emitidas', 'real', `${R.listas_presenca} listas emitidas desde 18/09. O retorno da folha assinada ainda não é registrado no sistema.`],
+    contratos: ['Contratos monitorados', 'misto', 'A empresa tem 11 contratos. Só a REDUC usa o SIGMA hoje (módulo de treinamentos). Os contratos B a K deste painel são fictícios e mostram como seria a visão consolidada.'],
+    cadastrados: ['Pessoas cadastradas', 'misto', 'Soma das pessoas da REDUC (reais, todas candidatas) com as dos contratos fictícios. Os dois números aparecem separados no texto do cartão.'],
+    mobilizados: ['Mobilizadas no contrato', 'demo', 'Quantas pessoas estão efetivamente no contrato hoje. Para a REDUC não há número: depende da tabela de vínculos (mt24), ainda não aplicada.'],
+    aptidao: ['Aptos no escopo', 'real', `Na REDUC, ${R.aptos_no_escopo} de ${R.pessoas} pessoas têm todos os treinamentos exigidos pela matriz da sua função liberados (regra do sistema, vw_aptidao_pessoa).`],
+    desatualizados: ['Contratos com dado desatualizado', 'demo', 'Contratos cuja planilha não é atualizada há mais de 10 dias. Com o SIGMA, o número não envelhece: aparece quando acontece.'],
+  };
+  function capacitacao() {
+    const outro = F.contrato && F.contrato !== 'REDUC';
+    $('#cap-p').textContent = outro ? `O contrato ${F.contrato} é fictício e ainda controla treinamentos em planilha. Os números reais abaixo são da REDUC.`
+      : 'Números do Sigma Treinamentos em produção. Toque num indicador para ver o que ele mede e de onde vem.';
+    const k = [['pessoas', 'Pessoas cadastradas', R.pessoas, 'todas como candidatas'], ['pin', 'Pessoas com PIN', R.com_pin, `${pct(R.com_pin, R.pessoas)}% do cadastro`, pct(R.com_pin, R.pessoas)],
+      ['selo', 'Com pelo menos um selo', R.com_selo, `${pct(R.com_selo, R.pessoas)}% do cadastro`, pct(R.com_selo, R.pessoas)], ['selos', 'Selos emitidos', R.selos, 'nenhum revogado'],
+      ['treinamentos', 'Treinamentos disponíveis', R.treinamentos, 'todos ativos'], ['funcoes', 'Funções com matriz', R.funcoes_com_matriz, '6 aguardam cadastro'],
+      ['listas', 'Listas de presença', R.listas_presenca, 'retorno não registrado']];
+    $('#kpis-real').innerHTML = k.map(([id, rot, v, d, b]) => kpi({ id, rot, v, d, tag: 'real', barra: b })).join('');
+
+    // aptidão: uma barra empilhada com dois estados
+    const a = R.aptos_no_escopo, n = R.com_treino_nunca_feito;
+    $('#apt-sub').textContent = `${R.pessoas} pessoas cadastradas. ${R.vencendo_30d} treinamentos vencendo nos próximos 30 dias.`;
+    $('#ch-apt').innerHTML = `<div style="display:flex;height:34px;gap:2px;border-radius:6px;overflow:hidden">
+      <span tabindex="0" data-v="${a} pessoas" data-l="aptas no escopo da função" style="flex:${a};background:var(--good)"></span>
+      <span tabindex="0" data-v="${n} pessoas" data-l="com treinamento exigido nunca feito" style="flex:${n};background:var(--warn)"></span></div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px">
+        <span class="est no_prazo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>${a} aptas (${pct(a, R.pessoas)}%)</span>
+        <span class="est aberta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 8v4M12 16h.01"/></svg>${n} com treinamento exigido nunca feito (${pct(n, R.pessoas)}%)</span></div>`;
+
+    const sel = $('#ch-selos'); sel.dataset.titulo = 'Selos emitidos por semana';
+    barrasV(sel, R.selos_semana, { unidade: ' selos' });
+    $('#t-selos').innerHTML = tabela(['Semana de', 'Selos'], R.selos_semana.map(([s, v]) => [s, nf(v)]));
+
+    const fs = R.aderencia.filter(f => !F.setor || f[1] === F.setor);
+    const top = fs.slice(0, 10);
+    const tp = fs.reduce((s, f) => s + f[2], 0), ta = fs.reduce((s, f) => s + f[3], 0);
+    $('#ader-sub').textContent = (F.setor ? `Setor ${F.setor}: ` : 'Dez funções com mais gente. ') + `${ta} de ${tp} pessoas aptas (${pct(ta, tp)}%). Barra = % de aptos na função.`;
+    barrasH($('#ch-ader'), top.map(f => ({ nome: f[0], pct: pct(f[3], f[2]), valor: `${pct(f[3], f[2])}% aptos`, dica: `${f[0]}: ${f[3]} de ${f[2]} pessoas`, direita: `${f[3]}/${f[2]} · ${pct(f[3], f[2])}%` })));
+    $('#t-ader').innerHTML = tabela(['Função', 'Setor', 'Pessoas', 'Aptas', 'Aderência'], fs.map(f => [f[0], f[1], f[2], f[3], pct(f[3], f[2]) + '%']));
+  }
+  function tabela(cab, linhas) {
+    return `<table class="medidas"><thead><tr>${cab.map(c => `<th style="text-align:left;font-size:11px;color:var(--muted);padding:6px 10px">${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${linhas.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  /* ── 05 pendências ── */
+  const ROT_SIT = { atrasada: 'Atrasada', aberta: 'Aberta', no_prazo: 'No prazo', planejado: 'Planejada' };
+  const ICO = { atrasada: '<path d="M12 8v4M12 16h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/>', aberta: '<path d="M12 6v6l4 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/>',
+    no_prazo: '<path d="M20 6 9 17l-5-5"/>', planejado: '<path d="M5 12h14"/>' };
+  const ORI = { demo: TAG.demo, real: TAG.real, real_registro: '<span class="tag real">Real · registro 12/09</span>', planejado: TAG.plan };
+  function pendencias() {
+    const ps = D.PENDENCIAS_DEMO.filter(p => (!F.contrato || p.contrato === F.contrato) && (!F.situacao || p.situacao === F.situacao));
+    $('#lista-pend').innerHTML = ps.length ? ps.map(p => `<details class="pend"><summary>
+      <span class="est ${p.situacao}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${ICO[p.situacao]}</svg>${ROT_SIT[p.situacao]}</span>
+      <span><span class="tp">${esc(p.tipo)}</span><br><span class="ct">${p.contrato === 'REDUC' ? 'REDUC' : 'Contrato ' + esc(p.contrato)} · ${esc(p.resp)}</span></span>
+      <span class="q">${nf(p.qtd)}</span><span class="ct ct2">${esc(p.prazo)}</span><span class="ct0">${ORI[p.origem]}</span></summary>
+      <div class="corpo"><div><span>Responsável</span>${esc(p.resp)}</div><div><span>Prazo</span>${esc(p.prazo)}</div><div><span>Próxima ação</span>${esc(p.acao)}</div></div></details>`).join('')
+      : '<div class="card" style="color:var(--muted)">Nenhuma pendência com este filtro.</div>';
+  }
+
+  /* ── 06 insights ── */
+  function insights() {
+    const velhos = D.CONTRATOS_DEMO.filter(c => c.atualizado_dias > 10);
+    const I = [
+      { o: 'real', t: `${R.pessoas - R.com_pin} pessoas da REDUC ainda não têm PIN`, q: `${R.com_pin} de ${R.pessoas} cadastraram o PIN.`,
+        i: 'Quem não tem PIN não assina atividade de campo, treinamento nem, no futuro, o espelho de ponto.', a: 'Cadastro do PIN no balcão, no fluxo presencial que já existe.', m: 'RH do contrato · Sigma Treinamentos' },
+      { o: 'real', t: `${pct(R.com_treino_nunca_feito, R.pessoas)}% do cadastro tem treinamento exigido nunca feito`, q: `${R.com_treino_nunca_feito} pessoas com ao menos um treinamento da matriz da função sem nenhuma tentativa.`,
+        i: 'Essas pessoas não ficam aptas no escopo da função.', a: 'Programar turmas por função, começando por Caldeireiro (29 sem aptidão) e Montador de Andaime (15).', m: 'SGI e Qualidade' },
+      { o: 'real', t: 'Emissão de selos caiu depois da mobilização inicial', q: 'Foram 475 selos na semana de 07/09 e 4 nas três últimas semanas somadas.',
+        i: 'Sem impacto se o cadastro está estável; se entrou gente nova, ela pode não estar treinando.', a: 'Conferir com o RH se houve admissões depois de 21/09.', m: 'RH e Qualidade' },
+      { o: 'real', t: 'Mobilização da REDUC não pode ser medida ainda', q: 'As 198 pessoas estão como candidatas: o banco não sabe quem está no contrato hoje.',
+        i: 'Efetivo, mobilização e desmobilização da REDUC ficam fora do painel.', a: 'Aprovar a mt24 (vínculos) e importar o efetivo atual pela planilha.', m: 'PO do SIGMA · Sigma RH' },
+      { o: 'demo', t: 'Validação documental é o maior tempo parado da jornada', q: 'Na simulação, a documentação em análise concentra mais pessoas e mais dias.',
+        i: 'Cada dia parado nessa etapa atrasa a mobilização no contrato.', a: 'Conferir documentos no dia em que chegam; avisar o RH pelo painel.', m: 'RH do contrato · Sigma RH' },
+      { o: 'demo', t: `${velhos.length} contratos com planilha há mais de 10 dias`, q: `Contratos ${velhos.map(c => c.id).join(', ')} na simulação.`,
+        i: 'A diretoria decide com dado velho nesses contratos.', a: 'Priorizar esses contratos na expansão.', m: 'Diretoria' },
+    ];
+    $('#insights').innerHTML = I.map(x => `<div class="ins${x.o === 'demo' ? ' demo' : ''}"><h4><span>${esc(x.t)}</span>${TAG[x.o]}</h4>
+      <dl><dt>O que houve</dt><dd>${esc(x.q)}</dd><dt>Impacto</dt><dd>${esc(x.i)}</dd><dt>Ação</dt><dd>${esc(x.a)}</dd><dt>Quem trata</dt><dd>${esc(x.m)}</dd></dl></div>`).join('');
+  }
+
+  /* ── 07 mão de obra ── */
+  function maoDeObra() {
+    const por = {}; R.aderencia.forEach(f => { por[f[1]] = (por[f[1]] || 0) + f[2]; });
+    const setores = Object.entries(por).sort((a, b) => b[1] - a[1]);
+    const top = setores.slice(0, 7), outros = setores.slice(7).reduce((s, x) => s + x[1], 0);
+    const lin = top.concat(outros ? [['Outros ' + (setores.length - 7) + ' setores', outros]] : []);
+    barrasH($('#ch-setor'), lin.map(([s, v]) => ({ nome: s, pct: 100 * v / setores[0][1], valor: v + ' pessoas', dica: s, direita: String(v) })));
+    $('#sit-cad').innerHTML = `<ul class="planej">
+      <li>Cadastradas ${TAG.real}<span><b style="color:var(--ink)">${R.pessoas}</b></span></li>
+      <li>Candidatas (estado no banco) ${TAG.real}<span><b style="color:var(--ink)">${R.ciclo.candidato}</b></span></li>
+      <li>Com selo de treinamento ${TAG.real}<span><b style="color:var(--ink)">${R.com_selo}</b></span></li>
+      <li>Mobilizadas ${TAG.plan}<span>depende da mt24</span></li>
+      <li>Documentação pendente ${TAG.plan}<span>depende da mt26</span></li>
+      <li>Histórico de movimentações ${TAG.plan}<span>depende da mt24</span></li></ul>`;
+    const am = R.almox_retiradas;
+    $('#almox').innerHTML = `<ul class="planej">
+      <li>Retiradas de material pedidas ${TAG.real}<span><b style="color:var(--ink)">${am.pedidos}</b> desde ${esc(am.desde)}</span></li>
+      <li>Retiradas liberadas ${TAG.real}<span><b style="color:var(--ink)">${am.liberados}</b></span></li>
+      <li>Ficha de EPI digital ${TAG.plan}<span>entrega confirmada com PIN</span></li>
+      <li>Material e EPI no portal da pessoa ${TAG.demo}<span><a href="portal.html?k=demo&amp;demo=1" style="color:var(--brand);font-weight:600">ver</a></span></li></ul>
+      <p class="hip">O módulo de retirada já existe no banco e está em uso inicial. Com ele integrado, o RH sabe o que cada pessoa tem em mãos na hora da desmobilização.</p>`;
+  }
+
+  /* ── 08 retorno ── */
+  function retorno() {
+    const c = Math.max(0, +$('#s-contratos').value || 0), h = Math.max(0, +$('#s-horas').value || 0), r = +$('#s-red').value;
+    const atual = c * h, lib = atual * r / 100, mes = lib * 4.33;
+    const f1 = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+    $('#s-red-v').textContent = r + '%';
+    $('#r-atual').textContent = f1(atual) + ' h'; $('#r-lib').textContent = f1(lib) + ' h'; $('#r-mes').textContent = '≈ ' + f1(mes) + ' h';
+    $('#r-txt').textContent = `${c} contratos × ${f1(h)} h por semana = ${f1(atual)} h. Com ${r}% de redução, ${f1(lib)} h por semana voltam para outras atividades. Os valores de partida (4 h e 50%) são hipótese para conversa, não resultado do SIGMA.`;
+  }
+  $('#medidas').innerHTML = D.MEDIDAS.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('');
+  $('#planej').innerHTML = D.PLANEJADO.map(([a, b]) => `<li>${esc(a)}<span>${esc(b)}</span></li>`).join('');
+
+  /* ── filtros ── */
+  const selC = $('#f-contrato');
+  selC.innerHTML = '<option value="">Todos os 11 contratos</option><option value="REDUC">REDUC (dados reais)</option>' +
+    D.CONTRATOS_DEMO.map(c => `<option value="${c.id}">${esc(c.nome)} (demonstração)</option>`).join('');
+  const setores = [...new Set(R.aderencia.map(f => f[1]))].sort();
+  $('#f-setor').innerHTML = '<option value="">Todos os setores</option>' + setores.map(s => `<option>${esc(s)}</option>`).join('');
+  function avisoFiltro() {
+    const a = [];
+    if (F.setor) a.push('Setor vale só para os dados reais da REDUC (aderência por função).');
+    if (F.periodo !== 6) a.push('Período vale só para a série demonstrativa de efetivo: o histórico real de selos começa em 24/08 e aparece inteiro.');
+    if (F.contrato && F.contrato !== 'REDUC') a.push(`Contrato ${F.contrato} é fictício: os blocos reais continuam mostrando a REDUC, com aviso.`);
+    $('#aviso-filtro').textContent = a.join(' ');
+  }
+  function tudo() { consolidado(); jornada(); capacitacao(); pendencias(); insights(); avisoFiltro(); }
+  selC.onchange = () => { F.contrato = selC.value; tudo(); };
+  $('#f-periodo').onchange = e => { F.periodo = +e.target.value; jornada(); avisoFiltro(); };
+  $('#f-setor').onchange = e => { F.setor = e.target.value; capacitacao(); avisoFiltro(); };
+  $('#f-situacao').onchange = e => { F.situacao = e.target.value; pendencias(); };
+  $('#f-limpar').onclick = () => { Object.assign(F, { contrato: '', periodo: 6, setor: '', situacao: '' });
+    selC.value = ''; $('#f-periodo').value = '6'; $('#f-setor').value = ''; $('#f-situacao').value = ''; tudo(); };
+
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-cena]'); if (b) return cena(b.dataset.cena);
+    const tr = ev.target.closest('tr[data-contrato]');
+    if (tr) { F.contrato = F.contrato === tr.dataset.contrato ? '' : tr.dataset.contrato; selC.value = F.contrato; tudo(); return; }
+    const k = ev.target.closest('[data-kpi]');
+    if (k && DET[k.dataset.kpi]) { const [t, o, p] = DET[k.dataset.kpi];
+      $('#det-t').innerHTML = esc(t) + ' ' + TAG[o]; $('#det-p').textContent = p;
+      $('#det-f').textContent = o === 'real' ? `Fonte: ${R.fonte}, ${R.medido_em}.` : o === 'misto' ? `Parte real (${R.fonte}, ${R.medido_em}) e parte fictícia.` : 'Número fictício, só para demonstração.';
+      $('#det').showModal(); return; }
+    const vt = ev.target.closest('[data-tab]');
+    if (vt) { const t = document.getElementById(vt.dataset.tab); t.classList.toggle('on'); vt.textContent = t.classList.contains('on') ? 'Esconder tabela' : vt.textContent.replace('Esconder tabela', 'Ver em tabela'); }
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Enter') { const tr = ev.target.closest && ev.target.closest('tr[data-contrato]'); if (tr) tr.click(); } });
+  $('#det-x').onclick = () => $('#det').close();
+  ['#s-contratos', '#s-horas', '#s-red'].forEach(s => $(s).addEventListener('input', retorno));
+  const nav = document.querySelector('.nav');
+  $('#burger').onclick = () => nav.dataset.aberto = nav.dataset.aberto === '1' ? '0' : '1';
+  nav.addEventListener('click', ev => { if (ev.target.closest('a')) nav.dataset.aberto = '0'; });
+
+  cena('hoje'); maoDeObra(); retorno(); tudo();
+  console.log('[SIGMA] ' + VERSAO);
+})();
+</script>
+</body>
+</html>
